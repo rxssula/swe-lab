@@ -17,3 +17,4 @@ def read_root():
 @app.post("/user", response_model=UserBase)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     return create_user_crud(db, user)
+    
