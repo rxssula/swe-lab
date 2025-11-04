@@ -9,9 +9,8 @@ from app.models.enums import IncidentStatus, LinkStatus, AdminRole, SupplierRole
 
 
 class UserBase(BaseModel):
-    email: EmailStr
+    email: str
     phone_number: Optional[str] = None
-    locale: Optional[str] = "kk"
 
 
 class UserCreate(UserBase):
