@@ -1,6 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
-from uuid import uuid4
+
+from uuid import UUID as PyUUID, uuid4
 
 from sqlalchemy import (
     String, DateTime, Numeric, Boolean, ForeignKey, Integer, Enum as SQLEnum
@@ -15,7 +16,7 @@ from app.models.enums import IncidentStatus, LinkStatus, AdminRole, SupplierRole
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
     phone_number: Mapped[str] = mapped_column(String)
@@ -31,7 +32,7 @@ class User(Base):
 class Consumer(Base):
     __tablename__ = "consumers"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     business_name: Mapped[str] = mapped_column(String, nullable=False)
     business_type: Mapped[str] = mapped_column(String)
     address: Mapped[str] = mapped_column(String)
@@ -45,9 +46,9 @@ class Consumer(Base):
 class ConsumerStaff(Base):
     __tablename__ = "consumer_staff"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    consumer_id: Mapped[uuid4] = mapped_column(ForeignKey("consumers.id"))
-    user_id: Mapped[uuid4] = mapped_column(ForeignKey("users.id"))
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    consumer_id: Mapped[PyUUID] = mapped_column(ForeignKey("consumers.id"))
+    user_id: Mapped[PyUUID] = mapped_column(ForeignKey("users.id"))
     role: Mapped[str] = mapped_column(String)
 
     consumer: Mapped["Consumer"] = relationship(back_populates="staff")
@@ -57,7 +58,7 @@ class ConsumerStaff(Base):
 class Supplier(Base):
     __tablename__ = "suppliers"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     company_name: Mapped[str] = mapped_column(String, nullable=False)
     business_type: Mapped[str] = mapped_column(String)
     address: Mapped[str] = mapped_column(String)
@@ -75,9 +76,9 @@ class Supplier(Base):
 class SupplierStaff(Base):
     __tablename__ = "supplier_staff"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    supplier_id: Mapped[uuid4] = mapped_column(ForeignKey("suppliers.id"))
-    user_id: Mapped[uuid4] = mapped_column(ForeignKey("users.id"))
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    supplier_id: Mapped[PyUUID] = mapped_column(ForeignKey("suppliers.id"))
+    user_id: Mapped[PyUUID] = mapped_column(ForeignKey("users.id"))
     role: Mapped[SupplierRole] = mapped_column(SQLEnum(SupplierRole))
 
     supplier: Mapped["Supplier"] = relationship(back_populates="staff")
@@ -87,8 +88,8 @@ class SupplierStaff(Base):
 class Subscription(Base):
     __tablename__ = "subscriptions"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    supplier_id: Mapped[uuid4] = mapped_column(ForeignKey("suppliers.id"))
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    supplier_id: Mapped[PyUUID] = mapped_column(ForeignKey("suppliers.id"))
     tier: Mapped[str] = mapped_column(String)
     start_date: Mapped[datetime] = mapped_column(DateTime)
     end_date: Mapped[datetime] = mapped_column(DateTime)
@@ -101,10 +102,10 @@ class Subscription(Base):
 class Category(Base):
     __tablename__ = "categories"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     name: Mapped[str] = mapped_column(String)
     description: Mapped[str] = mapped_column(String)
-    parent_category_id: Mapped[uuid4 | None] = mapped_column(ForeignKey("categories.id"))
+    parent_category_id: Mapped[UUID | None] = mapped_column(ForeignKey("categories.id"))
 
     products: Mapped[list["Product"]] = relationship(back_populates="category")
 
@@ -112,9 +113,9 @@ class Category(Base):
 class Product(Base):
     __tablename__ = "products"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    supplier_id: Mapped[uuid4] = mapped_column(ForeignKey("suppliers.id"))
-    category_id: Mapped[uuid4] = mapped_column(ForeignKey("categories.id"))
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    supplier_id: Mapped[PyUUID] = mapped_column(ForeignKey("suppliers.id"))
+    category_id: Mapped[PyUUID] = mapped_column(ForeignKey("categories.id"))
     name: Mapped[str] = mapped_column(String)
     description: Mapped[str] = mapped_column(String)
     unit: Mapped[str] = mapped_column(String)
@@ -131,8 +132,8 @@ class Product(Base):
 class ProductImage(Base):
     __tablename__ = "product_images"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    product_id: Mapped[uuid4] = mapped_column(ForeignKey("products.id"))
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    product_id: Mapped[PyUUID] = mapped_column(ForeignKey("products.id"))
     image_url: Mapped[str] = mapped_column(String)
     is_primary: Mapped[bool] = mapped_column(Boolean, default=False)
 
@@ -142,13 +143,13 @@ class ProductImage(Base):
 class ConsumerSupplierLink(Base):
     __tablename__ = "consumer_supplier_links"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    consumer_id: Mapped[uuid4] = mapped_column(ForeignKey("consumers.id"))
-    supplier_id: Mapped[uuid4] = mapped_column(ForeignKey("suppliers.id"))
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    consumer_id: Mapped[PyUUID] = mapped_column(ForeignKey("consumers.id"))
+    supplier_id: Mapped[PyUUID] = mapped_column(ForeignKey("suppliers.id"))
     status: Mapped[LinkStatus] = mapped_column(SQLEnum(LinkStatus))
     requested_at: Mapped[datetime] = mapped_column(DateTime)
     responded_at: Mapped[datetime | None] = mapped_column(DateTime)
-    responded_by: Mapped[uuid4 | None] = mapped_column(UUID(as_uuid=True))
+    responded_by: Mapped[UUID | None] = mapped_column(UUID(as_uuid=True))
 
     consumer: Mapped["Consumer"] = relationship(back_populates="links")
     supplier: Mapped["Supplier"] = relationship(back_populates="links")
@@ -159,8 +160,8 @@ class ConsumerSupplierLink(Base):
 class ChatThread(Base):
     __tablename__ = "chat_threads"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    link_id: Mapped[uuid4] = mapped_column(ForeignKey("consumer_supplier_links.id"))
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    link_id: Mapped[PyUUID] = mapped_column(ForeignKey("consumer_supplier_links.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     last_message_at: Mapped[datetime] = mapped_column(DateTime)
 
@@ -171,9 +172,9 @@ class ChatThread(Base):
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    thread_id: Mapped[uuid4] = mapped_column(ForeignKey("chat_threads.id"))
-    sender_id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True))
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    thread_id: Mapped[PyUUID] = mapped_column(ForeignKey("chat_threads.id"))
+    sender_id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True))
     sender_type: Mapped[str] = mapped_column(String)
     message_text: Mapped[str] = mapped_column(String)
     sent_at: Mapped[datetime] = mapped_column(DateTime)
@@ -187,8 +188,8 @@ class ChatMessage(Base):
 class ChatAttachment(Base):
     __tablename__ = "chat_attachments"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    message_id: Mapped[uuid4] = mapped_column(ForeignKey("chat_messages.id"))
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    message_id: Mapped[PyUUID] = mapped_column(ForeignKey("chat_messages.id"))
     file_url: Mapped[str] = mapped_column(String)
     file_type: Mapped[str] = mapped_column(String)
     file_name: Mapped[str] = mapped_column(String)
@@ -199,11 +200,11 @@ class ChatAttachment(Base):
 class Incident(Base):
     __tablename__ = "incidents"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    link_id: Mapped[uuid4] = mapped_column(ForeignKey("consumer_supplier_links.id"))
-    order_id: Mapped[uuid4 | None] = mapped_column(UUID(as_uuid=True))
-    reported_by: Mapped[uuid4] = mapped_column(UUID(as_uuid=True))
-    assigned_to: Mapped[uuid4 | None] = mapped_column(UUID(as_uuid=True))
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    link_id: Mapped[PyUUID] = mapped_column(ForeignKey("consumer_supplier_links.id"))
+    order_id: Mapped[UUID | None] = mapped_column(UUID(as_uuid=True))
+    reported_by: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True))
+    assigned_to: Mapped[UUID | None] = mapped_column(UUID(as_uuid=True))
     status: Mapped[IncidentStatus] = mapped_column(SQLEnum(IncidentStatus))
     description: Mapped[str] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -216,9 +217,9 @@ class Incident(Base):
 class IncidentLog(Base):
     __tablename__ = "incident_logs"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    incident_id: Mapped[uuid4] = mapped_column(ForeignKey("incidents.id"))
-    user_id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True))
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    incident_id: Mapped[PyUUID] = mapped_column(ForeignKey("incidents.id"))
+    user_id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True))
     action: Mapped[str] = mapped_column(String)
     notes: Mapped[str] = mapped_column(String)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -229,8 +230,8 @@ class IncidentLog(Base):
 class PlatformAdmin(Base):
     __tablename__ = "platform_admins"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id: Mapped[uuid4] = mapped_column(ForeignKey("users.id"))
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[PyUUID] = mapped_column(ForeignKey("users.id"))
     role: Mapped[AdminRole] = mapped_column(SQLEnum(AdminRole))
 
     user: Mapped["User"] = relationship(back_populates="platform_admin")
@@ -239,8 +240,8 @@ class PlatformAdmin(Base):
 class SupplierAnalytics(Base):
     __tablename__ = "supplier_analytics"
 
-    id: Mapped[uuid4] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    supplier_id: Mapped[uuid4] = mapped_column(ForeignKey("suppliers.id"))
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    supplier_id: Mapped[PyUUID] = mapped_column(ForeignKey("suppliers.id"))
     period: Mapped[str] = mapped_column(String)
     order_count: Mapped[int] = mapped_column(Integer)
     gmv: Mapped[Decimal] = mapped_column(Numeric(10, 2))
