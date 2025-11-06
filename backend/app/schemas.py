@@ -12,6 +12,8 @@ class UserBase(BaseModel):
     email: str
     phone_number: Optional[str] = None
 
+    model_config = {"from_attributes": True}
+
 
 class UserCreate(UserBase):
     password: str
