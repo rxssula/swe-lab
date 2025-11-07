@@ -1,14 +1,3 @@
-from sqlalchemy.orm import Session
-from app import schemas, models
-
-
-def create_user(db: Session, user: schemas.UserCreate):
-    user = models.User(name=user.name, email=user.email)
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    print("User created successfully")
-    return user
-
-
-
+# User CRUD operations
+# Currently using inline queries in routers
+# This file is reserved for future refactoring to separate business logic from routes

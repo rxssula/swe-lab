@@ -1,22 +1,17 @@
-from fastapi import FastAPI, Depends
-from sqlalchemy.orm import Session
+from fastapi import FastAPI
 
-from app.routers import users
-from app.schemas import UserBase, UserCreate
-from app.cruds.user import create_user as create_user_crud
-from app.core.db import get_db, engine
+from app.routers import users, auth, consumer
+from app.core.db import engine
 from app import models
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+app = FastAPI(
+    title="B2B Marketplace API",
+    description="Backend API for B2B marketplace connecting consumers and suppliers",
+    version="1.0.0"
+)
 
-# @app.get("/")
-# def read_root():
-#     return {"Hello": "World"}
-#
-# @app.post("/user", response_model=UserBase)
-# def create_user(user: UserCreate, db: Session = Depends(get_db)):
-#     return create_user_crud(db, user)
-
-app.include_router(users.router, tags=["users"])
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(consumer.router)
