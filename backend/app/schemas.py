@@ -4,7 +4,7 @@ from uuid import UUID
 from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr
-from app.models.enums import IncidentStatus, LinkStatus, AdminRole, SupplierRole
+from app.models.enums import IncidentStatus, LinkStatus, AdminRole, SupplierRole, ConsumerRole
 
 
 
@@ -27,6 +27,48 @@ class UserRead(UserBase):
     class Config:
         orm_mode = True
 
+
+# Signup Schemas
+class ConsumerSignup(BaseModel):
+    """Schema for consumer (restaurant/hotel) signup"""
+    # Business info
+    business_name: str
+    business_type: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    country: Optional[str] = None
+
+    # Owner user info
+    email: EmailStr
+    password: str
+    phone_number: Optional[str] = None
+
+
+class SupplierSignup(BaseModel):
+    """Schema for supplier (farmer/producer) signup"""
+    # Company info
+    company_name: str
+    business_type: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    country: Optional[str] = None
+
+    # Owner user info
+    email: EmailStr
+    password: str
+    phone_number: Optional[str] = None
+
+    # Optional subscription tier
+    subscription_tier: Optional[str] = "trial"
+
+
+class SignupResponse(BaseModel):
+    """Response after successful signup with auto-login"""
+    access_token: str
+    token_type: str
+    user: UserRead
+    user_type: str  # "consumer", "supplier", "admin"
+    role: str  # "owner", "admin", "sales", etc.
 
 
 class ConsumerBase(BaseModel):
