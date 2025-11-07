@@ -1,12 +1,15 @@
+from datetime import datetime, timedelta
 from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import EmailStr
 from sqlalchemy.orm import Session
 
 from app.auth.auth import get_current_user
 from app.core.db import get_db
-from app.models.user import Consumer, ConsumerStaff, User
+from app.models.enums import ConsumerRole
+from app.models.user import Consumer, ConsumerStaff, User, StaffInvitation
 from app.schemas import ConsumerCreate, ConsumerRead, ConsumerStaffCreate, ConsumerStaffRead
 
 router = APIRouter(prefix="/consumers", tags=["consumers"])
@@ -57,31 +60,62 @@ def list_consumers(
     return consumers
 
 
-@router.post("/{consumer_id}/staff", response_model=ConsumerStaffRead, status_code=status.HTTP_201_CREATED)
-def add_consumer_staff(
-    consumer_id: UUID,
-    staff_data: ConsumerStaffCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+@router.post("/{consumer_id}/staff/invite")
+def invite_consumer_staff(
+  consumer_id: UUID,
+  email: EmailStr,
+  role: ConsumerRole,  # "manager" or "staff"
+  db: Session = Depends(get_db),
+  current_user: User = Depends(get_current_user)
 ):
-    """Add a staff member to a consumer business"""
-    # Check if consumer exists
-    consumer = db.query(Consumer).filter(Consumer.id == consumer_id).first()
-    if not consumer:
-        raise HTTPException(status_code=404, detail="Consumer not found")
 
-    # Check if user exists
-    user = db.query(User).filter(User.id == staff_data.user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+  staff = db.query(ConsumerStaff).filter(
+      ConsumerStaff.consumer_id == consumer_id,
+      ConsumerStaff.user_id == current_user.id,
+      ConsumerStaff.role == ConsumerRole.OWNER.value
+  ).first()
 
-    # Create staff relationship
-    staff = ConsumerStaff(
-        consumer_id=consumer_id,
-        user_id=staff_data.user_id,
-        role=staff_data.role
-    )
-    db.add(staff)
-    db.commit()
-    db.refresh(staff)
-    return staff
+  if not staff:
+      raise HTTPException(status_code=403, detail="Only owner can invite staff")
+
+  existing_user = db.query(User).filter(User.email == email).first()
+  if existing_user:
+      raise HTTPException(status_code=400, detail="User already exists")
+
+  existing_invite = db.query(StaffInvitation).filter(
+      StaffInvitation.email == email,
+      StaffInvitation.consumer_id == consumer_id,
+      StaffInvitation.status == "pending"
+  ).first()
+
+  if existing_invite:
+      raise HTTPException(status_code=400, detail="Invitation already sent")
+
+  import secrets
+  token = secrets.token_urlsafe(32)
+
+  invitation = StaffInvitation(
+      email=str(email),
+      token=token,
+      consumer_id=consumer_id,
+      role=role.value,
+      invited_by=current_user.id,
+      expires_at=datetime.now() + timedelta(days=7)
+  )
+  db.add(invitation)
+  db.commit()
+
+  invitation_link = f"https://yourapp.com/accept-invitation?token={token}"
+
+  # TODO: Send actual email using email service
+  # send_email(
+  #     to=email,
+  #     subject="You're invited to join {business_name}",
+  #     body=f"Click here to accept: {invitation_link}"
+  # )
+
+  return {
+      "message": "Invitation sent",
+      "invitation_link": invitation_link,  # Return for testing
+      "expires_at": invitation.expires_at
+  }

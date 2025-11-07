@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
-from app.models.enums import IncidentStatus, LinkStatus, AdminRole, SupplierRole
+from app.models.enums import IncidentStatus, LinkStatus, AdminRole, SupplierRole, InvitationStatus
 
 
 class User(Base):
@@ -79,7 +79,7 @@ class SupplierStaff(Base):
     id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     supplier_id: Mapped[PyUUID] = mapped_column(ForeignKey("suppliers.id"))
     user_id: Mapped[PyUUID] = mapped_column(ForeignKey("users.id"))
-    role: Mapped[SupplierRole] = mapped_column(SQLEnum(SupplierRole))
+    role: Mapped[str] = mapped_column(String)
 
     supplier: Mapped["Supplier"] = relationship(back_populates="staff")
     user: Mapped["User"] = relationship(back_populates="supplier_staff")
@@ -251,3 +251,23 @@ class SupplierAnalytics(Base):
     first_response_time: Mapped[int] = mapped_column(Integer)
 
     supplier: Mapped["Supplier"] = relationship(back_populates="analytics")
+
+class StaffInvitation(Base):
+    __tablename__ = "staff_invitations"
+
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    email: Mapped[str] = mapped_column(String, nullable=False)
+    token: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+
+    consumer_id: Mapped[PyUUID | None] = mapped_column(ForeignKey("consumers.id"), nullable=True)
+    supplier_id: Mapped[PyUUID | None] = mapped_column(ForeignKey("suppliers.id"), nullable=True)
+
+    role: Mapped[str] = mapped_column(String)
+
+    status: Mapped[str] = mapped_column(SQLEnum(InvitationStatus), default=InvitationStatus.PENDING)  # pending, accepted, expired
+    invited_by: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True))
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+

@@ -28,6 +28,11 @@ class LinkStatus(Enum):
     REMOVED = "removed"
     BLOCKED = "blocked"
 
+class InvitationStatus(Enum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    EXPIRED = "expired"
+
 class OrderStatus(Enum):
     PENDING = "pending"
     ACCEPTED = "accepted"
