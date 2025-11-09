@@ -25,7 +25,7 @@ class UserRead(UserBase):
     last_login_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # Signup Schemas
@@ -87,7 +87,7 @@ class ConsumerRead(ConsumerBase):
     id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ConsumerStaffBase(BaseModel):
@@ -105,7 +105,7 @@ class ConsumerStaffRead(ConsumerStaffBase):
     user_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 
@@ -126,7 +126,7 @@ class SupplierRead(SupplierBase):
     id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class SupplierStaffBase(BaseModel):
@@ -144,7 +144,7 @@ class SupplierStaffRead(SupplierStaffBase):
     user_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 
@@ -165,7 +165,7 @@ class SubscriptionRead(SubscriptionBase):
     supplier_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 
@@ -183,7 +183,7 @@ class CategoryRead(CategoryBase):
     id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ProductBase(BaseModel):
@@ -207,7 +207,7 @@ class ProductRead(ProductBase):
     category_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ProductImageBase(BaseModel):
@@ -224,7 +224,7 @@ class ProductImageRead(ProductImageBase):
     product_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ConsumerSupplierLinkBase(BaseModel):
@@ -245,7 +245,7 @@ class ConsumerSupplierLinkRead(ConsumerSupplierLinkBase):
     supplier_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ChatAttachmentBase(BaseModel):
@@ -263,7 +263,7 @@ class ChatAttachmentRead(ChatAttachmentBase):
     message_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ChatMessageBase(BaseModel):
@@ -285,7 +285,7 @@ class ChatMessageRead(ChatMessageBase):
     attachments: Optional[List[ChatAttachmentRead]] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ChatThreadBase(BaseModel):
@@ -303,7 +303,7 @@ class ChatThreadRead(ChatThreadBase):
     messages: Optional[List[ChatMessageRead]] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class IncidentLogBase(BaseModel):
@@ -323,7 +323,7 @@ class IncidentLogRead(IncidentLogBase):
     user_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class IncidentBase(BaseModel):
@@ -346,7 +346,7 @@ class IncidentRead(IncidentBase):
     logs: Optional[List[IncidentLogRead]] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PlatformAdminBase(BaseModel):
@@ -362,7 +362,7 @@ class PlatformAdminRead(PlatformAdminBase):
     user_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class SupplierAnalyticsBase(BaseModel):
@@ -384,4 +384,4 @@ class SupplierAnalyticsRead(SupplierAnalyticsBase):
     supplier_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True

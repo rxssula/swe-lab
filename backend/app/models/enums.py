@@ -7,9 +7,9 @@ class AdminRole(Enum):
 
 
 class SupplierRole(Enum):
-    OWNER = "owner"
-    ADMIN = "admin"
-    SALES = "sales"
+    OWNER = "OWNER"
+    ADMIN = "ADMIN"
+    SALES = "SALES"
 
 class ConsumerRole(Enum):
     OWNER = "owner"

@@ -2,7 +2,7 @@ from itertools import product
 
 from fastapi import FastAPI
 
-from app.routers import users, auth, consumer, supplier
+from app.routers import users, auth, consumer, supplier, links, products, staff, categories
 from app.core.db import engine
 from app import models
 
@@ -17,5 +17,8 @@ app = FastAPI(
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(consumer.router)
-
 app.include_router(supplier.router)
+app.include_router(links.router)
+app.include_router(products.router)
+app.include_router(staff.router)
+app.include_router(categories.router)
