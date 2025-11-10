@@ -22,3 +22,17 @@ app.include_router(links.router)
 app.include_router(products.router)
 app.include_router(staff.router)
 app.include_router(categories.router)
+
+@app.get("/")
+async def root():
+    """Root endpoint - API is alive"""
+    return {"status": "ok", "message": "B2B Marketplace API is running"}
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring and keeping service awake"""
+    return {
+        "status": "healthy",
+        "service": "B2B Marketplace API",
+        "version": "1.0.0"
+    }

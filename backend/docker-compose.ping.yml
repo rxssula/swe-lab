@@ -1,0 +1,26 @@
+# Docker Compose for Ping Service
+# Use this for local testing or deployment
+
+version: '3.8'
+
+services:
+  ping-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.ping
+    container_name: render-ping-service
+    restart: unless-stopped
+    environment:
+      - APP_URL=${APP_URL}  # Set this in your environment or .env file
+      - PING_INTERVAL=${PING_INTERVAL:-840}
+      - HEALTH_ENDPOINT=${HEALTH_ENDPOINT:-/health}
+      - MAX_RETRIES=${MAX_RETRIES:-3}
+      - RETRY_DELAY=${RETRY_DELAY:-30}
+    # Optionally mount .env.ping file
+    # volumes:
+    #   - ./.env.ping:/app/.env.ping:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -1,0 +1,102 @@
+name: Keep Render App Alive
+
+on:
+  schedule:
+    # Run every 14 minutes (Render free tier sleeps after 15 minutes)
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Allow manual trigger for testing
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5  # Prevent hanging workflows
+
+    steps:
+      - name: Print start info
+        run: |
+          echo "============================================================"
+          echo "🚀 Keep-Alive Ping Service (GitHub Actions)"
+          echo "============================================================"
+          echo "📡 Workflow: ${{ github.workflow }}"
+          echo "⏰ Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "🔢 Run Number: ${{ github.run_number }}"
+          echo "============================================================"
+
+      - name: Ping health endpoint
+        id: ping
+        run: |
+          echo "🔄 Sending ping to health endpoint..."
+          echo "📍 URL: ${{ secrets.APP_URL }}/health"
+          echo ""
+
+          # Measure response time and capture status code
+          START_TIME=$(date +%s)
+
+          # Perform curl with detailed output
+          HTTP_CODE=$(curl -s -o /tmp/response.txt -w "%{http_code}" \
+            --max-time 90 \
+            --retry 2 \
+            --retry-delay 10 \
+            "${{ secrets.APP_URL }}/health")
+
+          END_TIME=$(date +%s)
+          ELAPSED=$((END_TIME - START_TIME))
+
+          echo "📊 Response Code: $HTTP_CODE"
+          echo "⏱️  Response Time: ${ELAPSED}s"
+
+          # Show response body if available
+          if [ -f /tmp/response.txt ]; then
+            echo "📄 Response Body:"
+            cat /tmp/response.txt
+            echo ""
+          fi
+
+          # Check if successful
+          if [ "$HTTP_CODE" -eq 200 ]; then
+            echo ""
+            echo "✅ SUCCESS! App is alive and responding"
+
+            # Warn about cold starts
+            if [ $ELAPSED -gt 10 ]; then
+              echo "⚠️  Note: Response took ${ELAPSED}s (possible cold start)"
+              echo "   This is normal if the app was just waking up"
+            fi
+
+            exit 0
+          else
+            echo ""
+            echo "❌ FAILED! Non-200 response code: $HTTP_CODE"
+            exit 1
+          fi
+
+      - name: Handle ping failure
+        if: failure()
+        run: |
+          echo ""
+          echo "============================================================"
+          echo "💔 PING FAILED"
+          echo "============================================================"
+          echo "Possible reasons:"
+          echo "  1. App is down or having issues"
+          echo "  2. Deployment is in progress"
+          echo "  3. URL in secrets is incorrect"
+          echo "  4. Network/timeout issues"
+          echo ""
+          echo "🔍 Check your Render dashboard for app status"
+          echo "============================================================"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo ""
+          echo "============================================================"
+          echo "📈 PING SUMMARY"
+          echo "============================================================"
+          echo "⏰ Completed: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "🔢 Run: ${{ github.run_number }}"
+          echo "📊 Result: ${{ steps.ping.outcome }}"
+          echo "🔗 Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "============================================================"
+          echo "⏰ Next ping: ~14 minutes from now"
+          echo "============================================================"
