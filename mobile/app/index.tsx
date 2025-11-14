@@ -50,7 +50,7 @@ export default function Index() {
                 </Pressable>
 
                 {/* Sign in link */}
-                <Link href="/onboarding" className="text-blue-500 text-lg">
+                <Link href="/auth/signup" className="text-blue-500 text-lg">
                     Sign in
                 </Link>
             </View>
