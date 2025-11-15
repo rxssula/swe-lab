@@ -9,7 +9,7 @@ export default function Index() {
 
     const handleLogin = () => {
         if (passcode === "1234") {
-            router.push("/user_role/consumer");
+            router.push("./(tabs)/catalog");
         } else if (passcode === "5678") {
             router.push("/user_role/supplier");
         } else {
