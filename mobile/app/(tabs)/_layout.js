@@ -28,7 +28,7 @@ export default function RootLayout() {
         }}
       />
       <Tabs.Screen
-        name="chat"
+        name="chats"
         options={{
           title: 'Chat',
           tabBarIcon: ({ color, size }) => (
@@ -46,9 +46,9 @@ export default function RootLayout() {
         }}
       />
       <Tabs.Screen
-        name="catalog"
+        name="orders"
         options={{
-          title: 'Catalog',
+          title: 'Orders',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="cart-outline" size={size} color={color} />
           ),

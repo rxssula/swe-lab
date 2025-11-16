@@ -1,216 +1,286 @@
-// app/catalog/index.js
-import React, { useEffect, useState, useMemo } from 'react';
+// app/Notifications.js
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  TextInput,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   StyleSheet,
-  RefreshControl,
   SafeAreaView,
+  RefreshControl,
+  Alert,
+  Image,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-// --- Mock data (replace with real API) ---
-const MOCK_ITEMS = Array.from({ length: 40 }).map((_, i) => ({
-  id: String(i + 1),
-  title: `Product ${i + 1}`,
-  price: (Math.random() * 100).toFixed(2),
-  short: `Short description for product ${i + 1}`,
-}));
+// --- Sample notifications (replace with API) ---
+const SAMPLE_NOTIFS = [
+  {
+    id: 'n1',
+    title: 'Order Shipped',
+    body: 'Your order ORD-1001 has been shipped. Track it now.',
+    time: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+    unread: true,
+    type: 'order',
+    avatar: 'https://i.pravatar.cc/80?img=5',
+  },
+  {
+    id: 'n2',
+    title: 'New Message from Support',
+    body: "Hi! We're checking your refund request — we'll update you soon.",
+    time: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+    unread: true,
+    type: 'message',
+    avatar: 'https://i.pravatar.cc/80?img=6',
+  },
+  {
+    id: 'n3',
+    title: 'Discount Coupon',
+    body: 'Use SAVE20 to get 20% off your next purchase. Expires soon!',
+    time: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+    unread: false,
+    type: 'promo',
+    avatar: 'https://i.pravatar.cc/80?img=7',
+  },
+];
 
-export default function Catalog() {
-  const router = useRouter();
+// --- Helper to format relative time (simple) ---
+function timeAgo(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const diff = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (diff < 60) return `${diff}s`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  return `${Math.floor(diff / 86400)}d`;
+}
 
-  // raw data & states
-  const [items, setItems] = useState([]);
-  const [query, setQuery] = useState('');
-  const [displayQuery, setDisplayQuery] = useState(''); // debounced value used for filtering
-  const [loading, setLoading] = useState(false);
+// --- Notification Row ---
+function NotificationRow({ item, onPress, onLongPress, onToggleRead, onDelete }) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={() => onPress(item)}
+      onLongPress={() => onLongPress(item)}
+      style={[styles.row, item.unread && styles.rowUnread]}
+    >
+      <Image source={{ uri: item.avatar }} style={styles.avatar} />
+
+      <View style={styles.content}>
+        <View style={styles.rowTop}>
+          <Text style={[styles.title, item.unread && styles.titleUnread]} numberOfLines={1}>
+            {item.title}
+          </Text>
+          <Text style={styles.time}>{timeAgo(item.time)}</Text>
+        </View>
+
+        <View style={styles.rowBottom}>
+          <Text style={[styles.body, item.unread && styles.bodyUnread]} numberOfLines={1}>
+            {item.body}
+          </Text>
+
+          <View style={styles.actions}>
+            <TouchableOpacity onPress={() => onToggleRead(item)} style={styles.iconBtn}>
+              <Ionicons
+                name={item.unread ? 'mail-unread-outline' : 'mail-open-outline'}
+                size={18}
+                color={item.unread ? '#007bff' : '#666'}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => onDelete(item)} style={styles.iconBtn}>
+              <Ionicons name="trash-outline" size={18} color="#d9534f" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      {item.unread ? <View style={styles.unreadDot} /> : null}
+    </TouchableOpacity>
+  );
+}
+
+// --- Notifications Screen ---
+export default function Notifications({ navigation }) {
+  const [notifs, setNotifs] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Simulate fetching from API
-  const fetchItems = async () => {
-    setLoading(true);
-    // simulate network delay
-    await new Promise((r) => setTimeout(r, 600));
-    setItems(MOCK_ITEMS);
-    setLoading(false);
-  };
-
+  // load sample
   useEffect(() => {
-    fetchItems();
+    // simulate fetch
+    setTimeout(() => setNotifs(SAMPLE_NOTIFS), 200);
   }, []);
 
-  // debounce search (300ms)
-  useEffect(() => {
-    const t = setTimeout(() => setDisplayQuery(query.trim()), 300);
-    return () => clearTimeout(t);
-  }, [query]);
-
-  // derived filtered items
-  const filtered = useMemo(() => {
-    if (!displayQuery) return items;
-    const q = displayQuery.toLowerCase();
-    return items.filter(
-      (it) =>
-        it.title.toLowerCase().includes(q) ||
-        it.short.toLowerCase().includes(q) ||
-        it.price.toString().includes(q)
-    );
-  }, [items, displayQuery]);
-
-  // pull-to-refresh handler
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchItems();
+    // TODO: call API to refresh notifications
+    await new Promise((r) => setTimeout(r, 600));
+    // For demo, we'll toggle a fake new notification
+    setNotifs((prev) => [
+      {
+        id: `n${Date.now()}`,
+        title: 'Welcome back!',
+        body: 'Thanks for checking updates — here is one new item.',
+        time: new Date().toISOString(),
+        unread: true,
+        type: 'info',
+        avatar: 'https://i.pravatar.cc/80?img=12',
+      },
+      ...prev,
+    ]);
     setRefreshing(false);
+  }, []);
+
+  const openNotification = (item) => {
+    // mark read and navigate to relevant screen
+    setNotifs((prev) => prev.map((n) => (n.id === item.id ? { ...n, unread: false } : n)));
+
+    // Example navigation by type
+    switch (item.type) {
+      case 'order':
+        navigation?.navigate?.('Orders'); // or router.push('/orders') if using expo-router
+        break;
+      case 'message':
+        navigation?.navigate?.('Chat', { userId: 'support' });
+        break;
+      default:
+        // show details modal or push to a details screen
+        Alert.alert(item.title, item.body);
+    }
   };
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => router.push(`/catalog/${item.id}`)}
-      activeOpacity={0.8}
-    >
-      <View style={styles.cardLeft}>
-        <View style={styles.thumbnail}>
-          <Text style={styles.thumbText}>{item.title.split(' ')[1]}</Text>
-        </View>
-      </View>
+  const longPressAction = (item) => {
+    Alert.alert(
+      'Notification',
+      'Choose action',
+      [
+        { text: item.unread ? 'Mark as read' : 'Mark as unread', onPress: () => toggleRead(item) },
+        { text: 'Archive', onPress: () => archiveNotification(item) },
+        { text: 'Delete', style: 'destructive', onPress: () => deleteNotification(item) },
+        { text: 'Cancel', style: 'cancel' },
+      ],
+      { cancelable: true }
+    );
+  };
 
-      <View style={styles.cardRight}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text numberOfLines={2} style={styles.short}>
-          {item.short}
-        </Text>
-        <View style={styles.row}>
-          <Text style={styles.price}>${item.price}</Text>
-          <TouchableOpacity
-            onPress={() => alert(`Added ${item.title} to cart (demo).`)}
-            style={styles.addBtn}
-          >
-            <Text style={styles.addText}>Add</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </TouchableOpacity>
+  const toggleRead = (item) => {
+    setNotifs((prev) => prev.map((n) => (n.id === item.id ? { ...n, unread: !n.unread } : n)));
+  };
+
+  const deleteNotification = (item) => {
+    setNotifs((prev) => prev.filter((n) => n.id !== item.id));
+  };
+
+  const archiveNotification = (item) => {
+    // demo: remove from list; in real app move to archive
+    setNotifs((prev) => prev.filter((n) => n.id !== item.id));
+    // show toast/alert
+    Alert.alert('Archived', 'Notification archived.');
+  };
+
+  const markAllRead = () => {
+    setNotifs((prev) => prev.map((n) => ({ ...n, unread: false })));
+  };
+
+  const renderEmpty = () => (
+    <View style={styles.empty}>
+      <Ionicons name="notifications-off-outline" size={56} color="#bbb" />
+      <Text style={styles.emptyTitle}>No notifications</Text>
+      <Text style={styles.emptySub}>You’ll see notifications here when something happens.</Text>
+    </View>
   );
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Catalog</Text>
+    <SafeAreaView style={styles.screen}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Notifications</Text>
+        <View style={styles.headerRight}>
+          <TouchableOpacity onPress={markAllRead} style={styles.headerBtn}>
+            <Ionicons name="mail-open-outline" size={20} color="#007bff" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setNotifs([])} style={styles.headerBtn}>
+            <Ionicons name="trash-outline" size={20} color="#d9534f" />
+          </TouchableOpacity>
         </View>
+      </View>
 
-        {/* Search */}
-        <View style={styles.searchWrap}>
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search products, price, description..."
-            style={styles.search}
-            returnKeyType="search"
-            clearButtonMode="while-editing"
-          />
-        </View>
-
-        {/* Content */}
-        {loading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" />
-          </View>
-        ) : (
-          <FlatList
-            data={filtered}
-            keyExtractor={(i) => i.id}
-            renderItem={renderItem}
-            contentContainerStyle={
-              filtered.length === 0 ? styles.flatEmpty : styles.flatList
-            }
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-            ListEmptyComponent={
-              <View style={styles.center}>
-                <Text style={styles.emptyTitle}>No results</Text>
-                <Text style={styles.emptyText}>
-                  Try a different keyword or clear the search.
-                </Text>
-              </View>
-            }
+      <FlatList
+        data={notifs}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <NotificationRow
+            item={item}
+            onPress={openNotification}
+            onLongPress={longPressAction}
+            onToggleRead={toggleRead}
+            onDelete={deleteNotification}
           />
         )}
-      </View>
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        contentContainerStyle={notifs.length === 0 ? styles.flatEmptyContainer : styles.flatContainer}
+        ListEmptyComponent={renderEmpty}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      />
     </SafeAreaView>
   );
 }
 
+// --- Styles ---
+const AVATAR_SIZE = 48;
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#fff' },
-  container: { flex: 1, paddingHorizontal: 16 },
-  header: { paddingVertical: 14 },
-  headerTitle: { fontSize: 24, fontWeight: '700' },
-
-  searchWrap: {
-    marginBottom: 12,
-  },
-  search: {
-    height: 44,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    paddingHorizontal: 12,
-    backgroundColor: '#f8fafc',
-  },
-
-  flatList: { paddingBottom: 24 },
-  flatEmpty: { flexGrow: 1, justifyContent: 'center', alignItems: 'center' },
-
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  emptyTitle: { fontSize: 18, fontWeight: '600', marginBottom: 6 },
-  emptyText: { fontSize: 14, color: '#6b7280' },
-
-  card: {
+  screen: { flex: 1, backgroundColor: '#f7f7f7' },
+  header: {
+    height: 56,
+    paddingHorizontal: 14,
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
-  cardLeft: { justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  thumbnail: {
-    width: 64,
-    height: 64,
-    borderRadius: 8,
-    backgroundColor: '#eef2ff',
-    justifyContent: 'center',
+  headerTitle: { fontSize: 20, fontWeight: '700' },
+  headerRight: { flexDirection: 'row', alignItems: 'center' },
+  headerBtn: { padding: 8, marginLeft: 6 },
+
+  flatContainer: { paddingVertical: 8 },
+  flatEmptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+
+  row: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
     alignItems: 'center',
   },
-  thumbText: { fontWeight: '700', color: '#3730a3' },
+  rowUnread: { backgroundColor: '#eef7ff' },
 
-  cardRight: { flex: 1, justifyContent: 'space-between' },
-  title: { fontSize: 16, fontWeight: '600' },
-  short: { fontSize: 13, color: '#6b7280', marginTop: 6 },
+  avatar: { width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2, marginRight: 12 },
 
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
-  price: { fontWeight: '700', color: '#111827' },
+  content: { flex: 1 },
+  rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  title: { fontSize: 15, color: '#222' },
+  titleUnread: { fontWeight: '700' },
+  time: { fontSize: 12, color: '#888', marginLeft: 8 },
 
-  addBtn: {
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+  rowBottom: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
+  body: { flex: 1, color: '#666' },
+  bodyUnread: { color: '#333' },
+
+  actions: { flexDirection: 'row', marginLeft: 8 },
+  iconBtn: { paddingHorizontal: 6, paddingVertical: 4 },
+
+  unreadDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#007bff',
+    marginLeft: 8,
   },
-  addText: { color: '#fff', fontWeight: '600' },
+
+  separator: { height: 8, backgroundColor: '#f7f7f7' },
+
+  empty: { alignItems: 'center', padding: 40 },
+  emptyTitle: { marginTop: 12, fontSize: 16, fontWeight: '600' },
+  emptySub: { marginTop: 6, color: '#aaa', textAlign: 'center' },
 });
