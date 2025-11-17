@@ -2,8 +2,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 export default function Profile() {
+  const router = useRouter();
   const user = {
     name: 'John Doe',
     email: 'john.doe@example.com',
@@ -62,7 +64,8 @@ export default function Profile() {
           <Ionicons name="settings-outline" size={20} color="#007bff" />
           <Text style={styles.bottomButtonText}>Settings</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.bottomButton, { backgroundColor: '#ff4d4d' }]}>
+        <TouchableOpacity style={[styles.bottomButton, { backgroundColor: '#ff4d4d' }]}
+                          onPress={() => router.push('/auth/login')}>
           <Ionicons name="log-out-outline" size={20} color="#fff" />
           <Text style={[styles.bottomButtonText, { color: '#fff' }]}>Logout</Text>
         </TouchableOpacity>
