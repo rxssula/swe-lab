@@ -11,7 +11,7 @@ export default function Index() {
         if (passcode === "1234") {
             router.push("/(tabs)/dashboard");
         } else if (passcode === "5678") {
-            router.push("/user_role/supplier");
+            router.push("/(tabs)/dashboard");
         } else {
             alert("Please enter a valid code number");
         }
@@ -51,7 +51,7 @@ export default function Index() {
 
                 {/* Sign in link */}
                 <Link href="/auth/signup" className="text-blue-500 text-lg">
-                    Sign in
+                    Sign up
                 </Link>
             </View>
         </View>

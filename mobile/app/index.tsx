@@ -9,9 +9,9 @@ export default function Index() {
 
     const handleLogin = () => {
         if (passcode === "1234") {
-            router.push("./(tabs)/catalog");
+            router.push("/(tabs)/dashboard");
         } else if (passcode === "5678") {
-            router.push("/user_role/supplier");
+            router.push("/(tabs)/dashboard");
         } else {
             alert("Please enter a valid code number");
         }
@@ -51,10 +51,10 @@ export default function Index() {
 
                 {/* Sign in link */}
                 <Link href="/auth/signup" className="text-blue-500 text-lg">
-                    Sign in
+                    Sign up
                 </Link>
 
-                <Link href="/catalog/catalog" className="text-blue-500 text-lg">
+                <Link href="/(tabs)/dashboard" className="text-blue-500 text-lg">
                     Catalog page test
                 </Link>
             </View>
