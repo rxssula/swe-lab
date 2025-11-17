@@ -54,7 +54,7 @@ export default function Index() {
                     Sign up
                 </Link>
 
-                <Link href="/(tabs)/dashboard" className="text-blue-500 text-lg">
+                <Link href="/consumer/(tabs)/dashboard" className="text-blue-500 text-lg">
                     Catalog page test
                 </Link>
             </View>
