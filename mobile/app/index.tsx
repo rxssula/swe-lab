@@ -9,9 +9,9 @@ export default function Index() {
 
     const handleLogin = () => {
         if (passcode === "1234") {
-            router.push("/(tabs)/dashboard");
+            router.push("/consumer/(tabs)/dashboard");
         } else if (passcode === "5678") {
-            router.push("/(tabs)/dashboard");
+            router.push("/supplier/(tabs)/dashboard");
         } else {
             alert("Please enter a valid code number");
         }
