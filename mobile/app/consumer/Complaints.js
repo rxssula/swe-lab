@@ -1,18 +1,14 @@
-// app/consumer/(tabs)/Complaints.js
+// app/consumer/Complaints.js
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
-    ScrollView,
-    Image,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 
-export default function Complaints({ navigation, route }) {
-    const { orderId } = route.params || {}; // get order id from params
+export default function Complaints() {
+    const router = useRouter();
+    const params = useLocalSearchParams(); // get route params
+    const orderId = params.orderId;
+
     const [complaintText, setComplaintText] = useState('');
     const [photo, setPhoto] = useState(null);
 
@@ -25,9 +21,13 @@ export default function Complaints({ navigation, route }) {
     };
 
     const submitComplaint = () => {
-        // Here you can send complaintText + photo to your backend
-        alert('Complaint submitted successfully!');
-        navigation.goBack();
+        if (!complaintText.trim()) {
+            Alert.alert('Error', 'Please enter your complaint.');
+            return;
+        }
+        // TODO: send complaintText + photo to backend
+        Alert.alert('Success', 'Complaint submitted successfully!');
+        router.back();
     };
 
     return (
@@ -65,6 +65,6 @@ const styles = StyleSheet.create({
     photoBtn: { backgroundColor: '#eee', padding: 12, borderRadius: 8, alignItems: 'center', marginBottom: 8 },
     photoBtnText: { color: '#333', fontWeight: '600' },
     photoPreview: { width: '100%', height: 200, marginBottom: 16, borderRadius: 8 },
-    submitBtn: { backgroundColor: '#007bff', padding: 14, borderRadius: 8, alignItems: 'center' },
+    submitBtn: { backgroundColor: '#e74c3c', padding: 14, borderRadius: 8, alignItems: 'center' },
     submitBtnText: { color: '#fff', fontWeight: '700' },
 });

@@ -20,41 +20,70 @@ export default function Index() {
     // };
 
     const handleLogin = async () => {
-    if (!username || !passcode) {
-        alert("Please enter username and passcode");
-        return;
-    }
+        if (passcode === "1234") {
+                    router.push("/consumer/(tabs)/dashboard");
+                } else if (passcode === "5678") {
+                    router.push("/supplier/(tabs)/dashboard");
+                } else {
+                    alert("Please enter a valid code number");
+                }
 
-    try {
-        const response = await fetch("https://swe-lab-1.onrender.com/auth/token", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password: passcode }),
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            // Save token securely
-            await AsyncStorage.setItem("token", data.token);
-
-            // Redirect based on user type
-            if (data.userType === "consumer") {
-                router.push("/consumer/(tabs)/dashboard");
-            } else if (data.userType === "supplier") {
-                router.push("/supplier/(tabs)/dashboard");
-            } else {
-                router.push("/supplier/(tabs)/dashboard");
-            }
-        } else {
-            alert("Invalid username or password");
+        if (!username || !passcode) {
+            alert("Please enter username and passcode");
+            return;
         }
-    } catch (error) {
-        console.error(error);
-        alert("Something went wrong. Try again.");
-    }
-};
+        const temp = JSON.stringify({ username, password: passcode });
+        console.log(temp);
+        try {
+            const form = new URLSearchParams();
+            form.append("username", username);
+            form.append("password", passcode);
 
+            const response = await fetch("https://swe-lab-1.onrender.com/auth/token", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    // optional: "Accept": "application/json"
+                },
+                body: form.toString(),
+            });
+
+            const text = await response.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.log("Non-JSON response:", text);
+                throw new Error("Server returned non-JSON response");
+            }
+
+            console.log("Response data:", data);
+
+            // Adjust to whatever your backend returns:
+            // common FastAPI OAuth returns: { "access_token": "...", "token_type": "bearer" }
+            if (response.ok && (data.access_token || data.token)) {
+                const token = data.access_token ?? data.token;
+                await AsyncStorage.setItem("token", token);
+
+                // if backend returns userType/role:
+                if (data.userType === "consumer") {
+                    router.push("/consumer/(tabs)/dashboard");
+                } else if (data.userType === "supplier") {
+                    router.push("/supplier/(tabs)/dashboard");
+                } else {
+                    // fallback: if server doesn't return role, go to a default or call /me
+                    router.push("/consumer/(tabs)/dashboard");
+                }
+            } else {
+                // server responded with 4xx, show message if provided
+                const msg = data.detail ?? data.message ?? "Invalid username or password";
+                alert(JSON.stringify(msg));
+            }
+        } catch (error) {
+            console.error("Login error:", error);
+            alert("Something went wrong. Check console.");
+        }
+    };
 
     return (
         <View className="flex-1 items-center bg-white px-6">
