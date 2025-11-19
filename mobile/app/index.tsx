@@ -1,21 +1,60 @@
 import { useState } from "react";
 import { Text, View, TextInput, Pressable } from "react-native";
 import { Link, useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 export default function Index() {
     const [username, setUsername] = useState("");
     const [passcode, setPasscode] = useState("");
     const router = useRouter();
 
-    const handleLogin = () => {
-        if (passcode === "1234") {
-            router.push("/consumer/(tabs)/dashboard");
-        } else if (passcode === "5678") {
-            router.push("/supplier/(tabs)/dashboard");
+    // const handleLogin = () => {
+    //     if (passcode === "1234") {
+    //         router.push("/consumer/(tabs)/dashboard");
+    //     } else if (passcode === "5678") {
+    //         router.push("/supplier/(tabs)/dashboard");
+    //     } else {
+    //         alert("Please enter a valid code number");
+    //     }
+    // };
+
+    const handleLogin = async () => {
+    if (!username || !passcode) {
+        alert("Please enter username and passcode");
+        return;
+    }
+
+    try {
+        const response = await fetch("https://swe-lab-1.onrender.com/auth/token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password: passcode }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Save token securely
+            await AsyncStorage.setItem("token", data.token);
+
+            // Redirect based on user type
+            if (data.userType === "consumer") {
+                router.push("/consumer/(tabs)/dashboard");
+            } else if (data.userType === "supplier") {
+                router.push("/supplier/(tabs)/dashboard");
+            } else {
+                router.push("/supplier/(tabs)/dashboard");
+            }
         } else {
-            alert("Please enter a valid code number");
+            alert("Invalid username or password");
         }
-    };
+    } catch (error) {
+        console.error(error);
+        alert("Something went wrong. Try again.");
+    }
+};
+
 
     return (
         <View className="flex-1 items-center bg-white px-6">

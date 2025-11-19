@@ -23,7 +23,7 @@ export default function Signup() {
         }
 
         try {
-            const response = await fetch(`http://127.0.0.1:8000/auth/signup/${role}`, {
+            const response = await fetch(`https://swe-lab-1.onrender.com/auth/signup/consumer/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -47,7 +47,7 @@ export default function Signup() {
             Alert.alert("Success", "Account created successfully!");
 
             // Route to dashboard
-            router.push("/(tabs)/dashboard");
+            router.push("/consumer/(tabs)/dashboard");
         } catch (error) {
             Alert.alert("Error", (error as Error).message);
         }
