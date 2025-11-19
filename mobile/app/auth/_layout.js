@@ -1,17 +1,13 @@
 // app/_layout.js
 import React from 'react';
 import { Stack } from 'expo-router';
-import './globals.css'
-
 
 export default function RootLayout() {
   return (
     <Stack>
-      {/* The (tabs) group contains your bottom tabs */}
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-
       {/* Auth screens are separate stack screens, not tabs */}
-      <Stack.Screen name="auth" options={{ headerShown: false }} />
+      <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="signup" options={{ headerShown: false }} />
     </Stack>
   );
 }
