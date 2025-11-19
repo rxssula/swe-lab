@@ -1,9 +1,11 @@
 from itertools import product
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import users, auth, consumer, supplier, links, products, staff, categories
 from app.core.db import engine
+from app.core.config import settings
 from app import models
 
 models.Base.metadata.create_all(bind=engine)
@@ -12,6 +14,15 @@ app = FastAPI(
     title="B2B Marketplace API",
     description="Backend API for B2B marketplace connecting consumers and suppliers",
     version="1.0.0"
+)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(auth.router)

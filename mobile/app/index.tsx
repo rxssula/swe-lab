@@ -11,7 +11,7 @@ export default function Index() {
         if (passcode === "1234") {
             router.push("/consumer/(tabs)/dashboard");
         } else if (passcode === "5678") {
-            router.push("/consumer/(tabs)/dashboard");
+            router.push("/supplier/(tabs)/dashboard");
         } else {
             alert("Please enter a valid code number");
         }
