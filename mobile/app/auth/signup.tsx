@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Text, View, TextInput, Pressable, ScrollView, Alert } from "react-native";
+import { Text, View, TextInput, Pressable, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 
 export default function Signup() {
@@ -12,58 +12,98 @@ export default function Signup() {
     const [password, setPassword] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
     const [role, setRole] = useState<"consumer" | "supplier" | "">("");
+    const [isLoading, setIsLoading] = useState(false);
 
     const router = useRouter();
 
     const handleSignUp = async () => {
-        // Validation
-        if (!businessName || !email || !password || !role) {
-            Alert.alert("Error", "Please fill in all required fields");
+        // Basic validation
+        if (!role) {
+            Alert.alert("Error", "Please select a role (Consumer or Supplier).");
+            return;
+        }
+        if (!businessName || !email || !password) {
+            Alert.alert("Error", "Please fill in all required fields.");
             return;
         }
 
-        try {
-            const response = await fetch(`https://swe-lab-1.onrender.com/auth/signup/consumer/`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    business_name: businessName,
-                    business_type: businessType,
-                    address,
-                    city,
-                    country,
-                    email,
-                    password,
-                    phone_number: phoneNumber,
-                }),
-            });
+        setIsLoading(true);
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to sign up");
+        try {
+            // Build endpoint depending on selected role.
+            // Adjust these endpoint names if your backend uses different path names.
+            const base = "https://swe-lab-1.onrender.com/auth/signup";
+            const endpoint = `${base}/${role}/`; // -> /auth/signup/consumer/ or /auth/signup/supplier/
+
+            // Build payload. Add role to payload if your backend expects it.
+            const payload: Record<string, any> = {
+                business_type: businessType,
+                address,
+                city,
+                country,
+                email,
+                password,
+                phone_number: phoneNumber,
+            };
+
+            if (role === 'supplier') {
+                payload.company_name = businessName;
+            } else {
+                payload.business_name = businessName;
             }
 
-            const data = await response.json();
+            // If backend expects a user type field, you can add it:
+            payload.role = role;
+
+            const response = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            console.log("Response is", response);
+
+            // Try to parse JSON body safely (some error responses may be empty or non-JSON)
+            let body: any = null;
+            try {
+                body = await response.json();
+            } catch {
+                body = null;
+            }
+
+            if (!response.ok) {
+                const message =
+                    (body && (body.message || body.detail || JSON.stringify(body))) ||
+                    `Failed to sign up (status ${response.status})`;
+                throw new Error(message);
+            }
+
+            // Success
             Alert.alert("Success", "Account created successfully!");
 
-            // Route to dashboard
-            router.push("/consumer/(tabs)/dashboard");
-        } catch (error) {
-            Alert.alert("Error", (error as Error).message);
+            // Route to the appropriate dashboard depending on role
+            if (role === "consumer") {
+                router.push("/consumer/(tabs)/dashboard");
+            } else {
+                router.push("/supplier/(tabs)/dashboard");
+            }
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            Alert.alert("Error", msg);
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
         <ScrollView className="flex-1 bg-gradient-to-b from-blue-50 to-white">
             <View className="px-6 pt-16 pb-8">
-                {/* Header */}
                 <View className="mb-8">
                     <Text className="text-4xl font-bold text-gray-800 text-center mb-2">
                         Create Account
                     </Text>
                 </View>
 
-                {/* Role Selection */}
                 <View className="mb-6">
                     <Text className="text-lg font-semibold text-gray-700 mb-3">
                         Select Your Role *
@@ -104,9 +144,7 @@ export default function Signup() {
                     </View>
                 </View>
 
-                {/* Form Fields */}
                 <View className="space-y-4">
-                    {/* Business Name */}
                     <View>
                         <Text className="text-sm font-medium text-gray-700 mb-2">
                             Business Name *
@@ -119,7 +157,6 @@ export default function Signup() {
                         />
                     </View>
 
-                    {/* Business Type */}
                     <View>
                         <Text className="text-sm font-medium text-gray-700 mb-2">
                             Business Type
@@ -132,7 +169,6 @@ export default function Signup() {
                         />
                     </View>
 
-                    {/* Email */}
                     <View>
                         <Text className="text-sm font-medium text-gray-700 mb-2">
                             Email *
@@ -147,7 +183,6 @@ export default function Signup() {
                         />
                     </View>
 
-                    {/* Password */}
                     <View>
                         <Text className="text-sm font-medium text-gray-700 mb-2">
                             Password *
@@ -161,7 +196,6 @@ export default function Signup() {
                         />
                     </View>
 
-                    {/* Phone Number */}
                     <View>
                         <Text className="text-sm font-medium text-gray-700 mb-2">
                             Phone Number
@@ -175,7 +209,6 @@ export default function Signup() {
                         />
                     </View>
 
-                    {/* Address */}
                     <View>
                         <Text className="text-sm font-medium text-gray-700 mb-2">
                             Address
@@ -188,7 +221,6 @@ export default function Signup() {
                         />
                     </View>
 
-                    {/* City & Country */}
                     <View className="flex-row gap-3">
                         <View className="flex-1">
                             <Text className="text-sm font-medium text-gray-700 mb-2">
@@ -215,20 +247,24 @@ export default function Signup() {
                     </View>
                 </View>
 
-                {/* Sign Up Button */}
                 <Pressable
                     onPress={handleSignUp}
                     className="bg-blue-500 rounded-xl py-4 items-center mt-8 mb-4 shadow-lg"
                     style={({ pressed }) => ({
                         opacity: pressed ? 0.8 : 1,
                     })}
+                    disabled={isLoading}
                 >
-                    <Text className="text-white font-bold text-lg">
-                        Create Account
-                    </Text>
+                    {isLoading ? (
+                        <View className="flex-row items-center">
+                            <ActivityIndicator />
+                            <Text className="text-white font-bold text-lg ml-3">Creating...</Text>
+                        </View>
+                    ) : (
+                        <Text className="text-white font-bold text-lg">Create Account</Text>
+                    )}
                 </Pressable>
 
-                {/* Sign In Link */}
                 <View className="flex-row justify-center mb-8">
                     <Text className="text-gray-600">Already have an account? </Text>
                     <Pressable onPress={() => router.push("/auth/login")}>
