@@ -57,35 +57,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     init();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    setIsLoading(true);
+  const signIn = async (username: string, password: string) => {
+    setIsLoading(true);   
     try {
-      const resp = await fetch("https://swe-lab-1.onrender.com/auth/token/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      if (!resp.ok) throw new Error("Login failed");
-      const body = await resp.json();
-      const t = body.access || body.token || body?.access_token;
-      if (!t) throw new Error("No token in response");
-      await SecureStore.setItemAsync(TOKEN_KEY, t);
-      setToken(t);
+        const form = new URLSearchParams();
+        form.append("username", username);
+        form.append("password", password);
+        const resp = await fetch("https://swe-lab-1.onrender.com/auth/token/", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: form.toString(),
+        });
+        if (!resp.ok) throw new Error("Login failed");
+        const body = await resp.json();
+        const t = body.access || body.token || body?.access_token;
+        if (!t) throw new Error("No token in response");
+        await SecureStore.setItemAsync(TOKEN_KEY, t);
+        setToken(t);
 
-      // fetch user profile
-      const profileResp = await fetch("https://swe-lab-1.onrender.com/auth/me/", {
-        headers: { Authorization: `Bearer ${t}` },
-      });
-      if (profileResp.ok) {
-        const profile = await profileResp.json();
-        setUser(profile);
+        // fetch user profile
+        const profileResp = await fetch("https://swe-lab-1.onrender.com/auth/me/", {
+            headers: { Authorization: `Bearer ${t}` },
+        });
+        if (profileResp.ok) {
+            const profile = await profileResp.json();
+            console.log("profile:", profile);
+            setUser(profile);
+            let role = profile.role;
+            if (role === "consumer") {
+              router.replace("/consumer/(tabs)/dashboard");
+            } else {
+              router.replace("/supplier/(tabs)/dashboard");
+            }
+            
+        }
+      } finally {
+          setIsLoading(false);
       }
-
-      // route to appropriate dashboard or root
-      router.replace("/"); // or router.replace("/consumer/(tabs)/dashboard")
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const signOut = async () => {
@@ -105,7 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
+    const ctx = useContext(AuthContext);
+    if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+    return ctx;
 };

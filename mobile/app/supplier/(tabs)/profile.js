@@ -2,8 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useAuth } from "../../context/AuthContext"; 
 
 export default function Profile() {
+    const { signOut } = useAuth();
     const router = useRouter();
     const user = {
         name: 'John Doe',
@@ -76,7 +78,7 @@ export default function Profile() {
 
                 <TouchableOpacity
                     style={[styles.bottomButton, { backgroundColor: '#ff4d4d' }]}
-                    onPress={() => router.push('/auth/login')}
+                    onPress={signOut}
                 >
                     <Ionicons name="log-out-outline" size={20} color="#fff" />
                     <Text style={[styles.bottomButtonText, { color: '#fff' }]}>Logout</Text>

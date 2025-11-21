@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Text, View, TextInput, Pressable, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
+import { useAuth } from "../context/AuthContext";
 
 export default function Signup() {
     const [businessName, setBusinessName] = useState("");
@@ -15,9 +16,9 @@ export default function Signup() {
     const [isLoading, setIsLoading] = useState(false);
 
     const router = useRouter();
+    const { signIn } = useAuth();
 
     const handleSignUp = async () => {
-        // Basic validation
         if (!role) {
             Alert.alert("Error", "Please select a role (Consumer or Supplier).");
             return;
@@ -30,12 +31,9 @@ export default function Signup() {
         setIsLoading(true);
 
         try {
-            // Build endpoint depending on selected role.
-            // Adjust these endpoint names if your backend uses different path names.
             const base = "https://swe-lab-1.onrender.com/auth/signup";
-            const endpoint = `${base}/${role}/`; // -> /auth/signup/consumer/ or /auth/signup/supplier/
+            const endpoint = `${base}/${role}/`;
 
-            // Build payload. Add role to payload if your backend expects it.
             const payload: Record<string, any> = {
                 business_type: businessType,
                 address,
@@ -52,18 +50,12 @@ export default function Signup() {
                 payload.business_name = businessName;
             }
 
-            // If backend expects a user type field, you can add it:
-            payload.role = role;
-
             const response = await fetch(endpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             });
 
-            console.log("Response is", response);
-
-            // Try to parse JSON body safely (some error responses may be empty or non-JSON)
             let body: any = null;
             try {
                 body = await response.json();
@@ -77,16 +69,9 @@ export default function Signup() {
                     `Failed to sign up (status ${response.status})`;
                 throw new Error(message);
             }
-
-            // Success
             Alert.alert("Success", "Account created successfully!");
-
-            // Route to the appropriate dashboard depending on role
-            if (role === "consumer") {
-                router.push("/consumer/(tabs)/dashboard");
-            } else {
-                router.push("/supplier/(tabs)/dashboard");
-            }
+            await signIn(email, password);
+            
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             Alert.alert("Error", msg);
