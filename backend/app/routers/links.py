@@ -18,7 +18,6 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/links", tags=["links"])
 
 
-# ==================== Request Schemas ====================
 
 class LinkRequestCreate(BaseModel):
     supplier_id: UUID
@@ -33,7 +32,6 @@ class LinkResponse(BaseModel):
     responded_at: datetime | None
     responded_by: UUID | None
 
-    # Additional info
     supplier_name: str | None = None
     consumer_name: str | None = None
 
@@ -43,6 +41,7 @@ class LinkResponse(BaseModel):
 
 
 def get_consumer_for_user(db: Session, user: User) -> Consumer | None:
+    """Get consumer entity for current user"""
     """Get consumer entity for current user"""
     consumer_staff = db.query(ConsumerStaff).filter(
         ConsumerStaff.user_id == user.id
@@ -58,6 +57,7 @@ def get_consumer_for_user(db: Session, user: User) -> Consumer | None:
 
 def get_supplier_for_user(db: Session, user: User) -> Supplier | None:
     """Get supplier entity for current user"""
+    """Get supplier entity for current user"""
     supplier_staff = db.query(SupplierStaff).filter(
         SupplierStaff.user_id == user.id
     ).first()
@@ -72,6 +72,7 @@ def get_supplier_for_user(db: Session, user: User) -> Supplier | None:
 
 def has_supplier_permission(db: Session, user: User, supplier_id: UUID, allowed_roles: List[str]) -> bool:
     """Check if user has permission for supplier actions"""
+    """Check if user has permission for supplier actions"""
     staff = db.query(SupplierStaff).filter(
         SupplierStaff.user_id == user.id,
         SupplierStaff.supplier_id == supplier_id
@@ -83,7 +84,6 @@ def has_supplier_permission(db: Session, user: User, supplier_id: UUID, allowed_
     return staff.role in allowed_roles
 
 
-# ==================== Consumer Endpoints ====================
 
 @router.post("/request", response_model=LinkResponse, status_code=status.HTTP_201_CREATED)
 def request_link_to_supplier(
@@ -95,7 +95,6 @@ def request_link_to_supplier(
     Consumer requests a link to a supplier.
     Only consumers can make this request.
     """
-    # Check if user is a consumer
     consumer = get_consumer_for_user(db, current_user)
     if not consumer:
         raise HTTPException(
@@ -103,7 +102,6 @@ def request_link_to_supplier(
             detail="Only consumers can request supplier links"
         )
 
-    # Check if supplier exists
     supplier = db.query(Supplier).filter(Supplier.id == data.supplier_id).first()
     if not supplier:
         raise HTTPException(
@@ -111,7 +109,6 @@ def request_link_to_supplier(
             detail="Supplier not found"
         )
 
-    # Check if link already exists
     existing_link = db.query(ConsumerSupplierLink).filter(
         ConsumerSupplierLink.consumer_id == consumer.id,
         ConsumerSupplierLink.supplier_id == data.supplier_id
@@ -133,8 +130,6 @@ def request_link_to_supplier(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You have been blocked by this supplier"
             )
-        # If DECLINED or REMOVED, allow new request
-        # Update existing link instead of creating new one
         existing_link.status = LinkStatus.PENDING
         existing_link.requested_at = datetime.now()
         existing_link.responded_at = None
@@ -154,7 +149,6 @@ def request_link_to_supplier(
             consumer_name=consumer.business_name
         )
 
-    # Create new link request
     link = ConsumerSupplierLink(
         consumer_id=consumer.id,
         supplier_id=data.supplier_id,
@@ -199,7 +193,6 @@ def get_my_links(
         ConsumerSupplierLink.consumer_id == consumer.id
     )
 
-    # Apply status filter if provided
     if status_filter:
         try:
             status_enum = LinkStatus(status_filter.lower())
@@ -212,7 +205,6 @@ def get_my_links(
 
     links = query.all()
 
-    # Enrich with supplier info
     result = []
     for link in links:
         supplier = db.query(Supplier).filter(Supplier.id == link.supplier_id).first()
@@ -231,7 +223,6 @@ def get_my_links(
     return result
 
 
-# ==================== Supplier Endpoints ====================
 
 @router.get("/requests", response_model=List[LinkResponse])
 def get_link_requests(
@@ -255,7 +246,6 @@ def get_link_requests(
         ConsumerSupplierLink.supplier_id == supplier.id
     )
 
-    # Apply status filter if provided
     if status_filter:
         try:
             status_enum = LinkStatus(status_filter.lower())
@@ -268,7 +258,6 @@ def get_link_requests(
 
     links = query.all()
 
-    # Enrich with consumer info
     result = []
     for link in links:
         consumer = db.query(Consumer).filter(Consumer.id == link.consumer_id).first()
@@ -297,7 +286,6 @@ def accept_link_request(
     Supplier accepts a link request from a consumer.
     Only Owner and Manager can accept links.
     """
-    # Get the link
     link = db.query(ConsumerSupplierLink).filter(
         ConsumerSupplierLink.id == link_id
     ).first()
@@ -308,7 +296,6 @@ def accept_link_request(
             detail="Link request not found"
         )
 
-    # Check permissions (Owner or Manager only)
     if not has_supplier_permission(
         db, current_user, link.supplier_id,
         [SupplierRole.OWNER.value, SupplierRole.ADMIN.value]
@@ -318,21 +305,18 @@ def accept_link_request(
             detail="Only Owner or Manager can accept link requests"
         )
 
-    # Check if already processed
     if link.status != LinkStatus.PENDING:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Link request is not pending (current status: {link.status.value})"
         )
 
-    # Accept the link
     link.status = LinkStatus.ACCEPTED
     link.responded_at = datetime.now()
     link.responded_by = current_user.id
     db.commit()
     db.refresh(link)
 
-    # Get related entities for response
     supplier = db.query(Supplier).filter(Supplier.id == link.supplier_id).first()
     consumer = db.query(Consumer).filter(Consumer.id == link.consumer_id).first()
 
@@ -359,7 +343,6 @@ def reject_link_request(
     Supplier rejects a link request from a consumer.
     Only Owner and Manager can reject links.
     """
-    # Get the link
     link = db.query(ConsumerSupplierLink).filter(
         ConsumerSupplierLink.id == link_id
     ).first()
@@ -370,7 +353,6 @@ def reject_link_request(
             detail="Link request not found"
         )
 
-    # Check permissions (Owner or Manager only)
     if not has_supplier_permission(
         db, current_user, link.supplier_id,
         [SupplierRole.OWNER.value, SupplierRole.ADMIN.value]
@@ -380,21 +362,18 @@ def reject_link_request(
             detail="Only Owner or Manager can reject link requests"
         )
 
-    # Check if already processed
     if link.status != LinkStatus.PENDING:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Link request is not pending (current status: {link.status.value})"
         )
 
-    # Reject the link
     link.status = LinkStatus.DECLINED
     link.responded_at = datetime.now()
     link.responded_by = current_user.id
     db.commit()
     db.refresh(link)
 
-    # Get related entities for response
     supplier = db.query(Supplier).filter(Supplier.id == link.supplier_id).first()
     consumer = db.query(Consumer).filter(Consumer.id == link.consumer_id).first()
 
@@ -423,7 +402,6 @@ def remove_or_block_link(
     Only Owner and Manager can remove/block links.
     Use block=true to block the consumer (prevents future requests).
     """
-    # Get the link
     link = db.query(ConsumerSupplierLink).filter(
         ConsumerSupplierLink.id == link_id
     ).first()
@@ -434,7 +412,6 @@ def remove_or_block_link(
             detail="Link not found"
         )
 
-    # Check permissions (Owner or Manager only)
     if not has_supplier_permission(
         db, current_user, link.supplier_id,
         [SupplierRole.OWNER.value, SupplierRole.ADMIN.value]
@@ -444,7 +421,6 @@ def remove_or_block_link(
             detail="Only Owner or Manager can remove/block links"
         )
 
-    # Update link status
     if block:
         link.status = LinkStatus.BLOCKED
     else:

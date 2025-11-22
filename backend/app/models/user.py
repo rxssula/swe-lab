@@ -267,7 +267,7 @@ class StaffInvitation(Base):
 
     role: Mapped[str] = mapped_column(String)
 
-    status: Mapped[str] = mapped_column(SQLEnum(InvitationStatus), default=InvitationStatus.PENDING)  # pending, accepted, expired
+    status: Mapped[str] = mapped_column(SQLEnum(InvitationStatus), default=InvitationStatus.PENDING)
     invited_by: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True))
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -284,7 +284,7 @@ class Order(Base):
     status: Mapped[OrderStatus] = mapped_column(SQLEnum(OrderStatus), default=OrderStatus.PENDING)
     total_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     delivery_notes: Mapped[str | None] = mapped_column(String, nullable=True)
-    delivery_option: Mapped[str] = mapped_column(String)  # "delivery" or "pickup"
+    delivery_option: Mapped[str] = mapped_column(String)
     rejection_reason: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

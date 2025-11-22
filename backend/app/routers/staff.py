@@ -17,7 +17,6 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/staff", tags=["staff"])
 
 
-# ==================== Request/Response Schemas ====================
 
 class StaffMemberResponse(BaseModel):
     id: UUID
@@ -49,9 +48,9 @@ class RoleUpdate(BaseModel):
     role: str
 
 
-# ==================== Helper Functions ====================
 
 def get_supplier_staff(db: Session, user: User) -> SupplierStaff | None:
+    """Get supplier staff record for user"""
     """Get supplier staff record for user"""
     return db.query(SupplierStaff).filter(
         SupplierStaff.user_id == user.id
@@ -60,12 +59,12 @@ def get_supplier_staff(db: Session, user: User) -> SupplierStaff | None:
 
 def get_consumer_staff(db: Session, user: User) -> ConsumerStaff | None:
     """Get consumer staff record for user"""
+    """Get consumer staff record for user"""
     return db.query(ConsumerStaff).filter(
         ConsumerStaff.user_id == user.id
     ).first()
 
 
-# ==================== Supplier Staff Management ====================
 
 @router.get("/supplier/list", response_model=List[StaffMemberResponse])
 def list_supplier_staff(
@@ -83,7 +82,6 @@ def list_supplier_staff(
             detail="Only supplier staff can view staff list"
         )
 
-    # Get all staff for this supplier
     all_staff = db.query(SupplierStaff).filter(
         SupplierStaff.supplier_id == staff_record.supplier_id
     ).all()
@@ -123,14 +121,12 @@ def remove_supplier_staff(
             detail="Only supplier staff can remove staff members"
         )
 
-    # Only Owner can remove staff
     if current_staff.role != SupplierRole.OWNER.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only Owner can remove staff members"
         )
 
-    # Get the staff member to be removed
     target_staff = db.query(SupplierStaff).filter(
         SupplierStaff.id == staff_id,
         SupplierStaff.supplier_id == current_staff.supplier_id
@@ -142,14 +138,12 @@ def remove_supplier_staff(
             detail="Staff member not found"
         )
 
-    # Cannot remove self
     if target_staff.user_id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot remove yourself. Transfer ownership first or delete the supplier account."
         )
 
-    # Remove the staff member
     db.delete(target_staff)
     db.commit()
 
@@ -175,14 +169,12 @@ def update_supplier_staff_role(
             detail="Only supplier staff can update roles"
         )
 
-    # Only Owner can update roles
     if current_staff.role != SupplierRole.OWNER.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only Owner can update staff roles"
         )
 
-    # Validate new role
     try:
         new_role = SupplierRole(data.role.lower())
     except ValueError:
@@ -191,14 +183,12 @@ def update_supplier_staff_role(
             detail=f"Invalid role. Must be one of: {[r.value for r in SupplierRole]}"
         )
 
-    # Cannot assign Owner role (must be transferred)
     if new_role == SupplierRole.OWNER:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot assign Owner role. Use ownership transfer endpoint instead."
         )
 
-    # Get the target staff member
     target_staff = db.query(SupplierStaff).filter(
         SupplierStaff.id == staff_id,
         SupplierStaff.supplier_id == current_staff.supplier_id
@@ -210,19 +200,16 @@ def update_supplier_staff_role(
             detail="Staff member not found"
         )
 
-    # Cannot change Owner's role
     if target_staff.role == SupplierRole.OWNER.value:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot change Owner role. Use ownership transfer endpoint instead."
         )
 
-    # Update the role
     target_staff.role = new_role.value
     db.commit()
     db.refresh(target_staff)
 
-    # Get user info for response
     user = db.query(User).filter(User.id == target_staff.user_id).first()
 
     return StaffMemberResponse(
@@ -257,7 +244,6 @@ def list_supplier_invitations(
         StaffInvitation.supplier_id == staff_record.supplier_id
     )
 
-    # Apply status filter
     if status_filter:
         try:
             status_enum = InvitationStatus(status_filter.lower())
@@ -281,7 +267,6 @@ def list_supplier_invitations(
     ) for inv in invitations]
 
 
-# ==================== Consumer Staff Management ====================
 
 @router.get("/consumer/list", response_model=List[StaffMemberResponse])
 def list_consumer_staff(
@@ -299,7 +284,6 @@ def list_consumer_staff(
             detail="Only consumer staff can view staff list"
         )
 
-    # Get all staff for this consumer
     all_staff = db.query(ConsumerStaff).filter(
         ConsumerStaff.consumer_id == staff_record.consumer_id
     ).all()
@@ -339,14 +323,12 @@ def remove_consumer_staff(
             detail="Only consumer staff can remove staff members"
         )
 
-    # Only Owner can remove staff
     if current_staff.role != ConsumerRole.OWNER.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only Owner can remove staff members"
         )
 
-    # Get the staff member to be removed
     target_staff = db.query(ConsumerStaff).filter(
         ConsumerStaff.id == staff_id,
         ConsumerStaff.consumer_id == current_staff.consumer_id
@@ -358,14 +340,12 @@ def remove_consumer_staff(
             detail="Staff member not found"
         )
 
-    # Cannot remove self
     if target_staff.user_id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot remove yourself. Transfer ownership first or delete the consumer account."
         )
 
-    # Remove the staff member
     db.delete(target_staff)
     db.commit()
 
@@ -391,14 +371,12 @@ def update_consumer_staff_role(
             detail="Only consumer staff can update roles"
         )
 
-    # Only Owner can update roles
     if current_staff.role != ConsumerRole.OWNER.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only Owner can update staff roles"
         )
 
-    # Validate new role
     try:
         new_role = ConsumerRole(data.role.lower())
     except ValueError:
@@ -407,14 +385,12 @@ def update_consumer_staff_role(
             detail=f"Invalid role. Must be one of: {[r.value for r in ConsumerRole]}"
         )
 
-    # Cannot assign Owner role (must be transferred)
     if new_role == ConsumerRole.OWNER:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot assign Owner role. Use ownership transfer endpoint instead."
         )
 
-    # Get the target staff member
     target_staff = db.query(ConsumerStaff).filter(
         ConsumerStaff.id == staff_id,
         ConsumerStaff.consumer_id == current_staff.consumer_id
@@ -426,19 +402,16 @@ def update_consumer_staff_role(
             detail="Staff member not found"
         )
 
-    # Cannot change Owner's role
     if target_staff.role == ConsumerRole.OWNER.value:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot change Owner role. Use ownership transfer endpoint instead."
         )
 
-    # Update the role
     target_staff.role = new_role.value
     db.commit()
     db.refresh(target_staff)
 
-    # Get user info for response
     user = db.query(User).filter(User.id == target_staff.user_id).first()
 
     return StaffMemberResponse(
@@ -473,7 +446,6 @@ def list_consumer_invitations(
         StaffInvitation.consumer_id == staff_record.consumer_id
     )
 
-    # Apply status filter
     if status_filter:
         try:
             status_enum = InvitationStatus(status_filter.lower())

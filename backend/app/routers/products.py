@@ -19,13 +19,12 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/products", tags=["products"])
 
 
-# ==================== Request/Response Schemas ====================
 
 class ProductCreate(BaseModel):
     name: str
     description: str | None = None
     category_id: UUID
-    unit: str  # e.g., "kg", "liters", "pieces"
+    unit: str
     price_per_unit: Decimal
     stock_level: int
     minimum_order_quantity: int = 1
@@ -70,7 +69,6 @@ class ProductResponse(BaseModel):
     minimum_order_quantity: int
     is_active: bool
 
-    # Additional fields
     supplier_name: str | None = None
     category_name: str | None = None
     images: List[ProductImageResponse] = []
@@ -80,6 +78,7 @@ class ProductResponse(BaseModel):
 
 
 class CatalogItem(BaseModel):
+    """Consumer view of product with supplier info"""
     """Consumer view of product with supplier info"""
     id: UUID
     name: str
@@ -98,9 +97,9 @@ class CatalogItem(BaseModel):
         from_attributes = True
 
 
-# ==================== Helper Functions ====================
 
 def get_supplier_for_user(db: Session, user: User) -> Supplier | None:
+    """Get supplier entity for current user"""
     """Get supplier entity for current user"""
     supplier_staff = db.query(SupplierStaff).filter(
         SupplierStaff.user_id == user.id
@@ -116,6 +115,7 @@ def get_supplier_for_user(db: Session, user: User) -> Supplier | None:
 
 def get_consumer_for_user(db: Session, user: User) -> Consumer | None:
     """Get consumer entity for current user"""
+    """Get consumer entity for current user"""
     consumer_staff = db.query(ConsumerStaff).filter(
         ConsumerStaff.user_id == user.id
     ).first()
@@ -130,6 +130,7 @@ def get_consumer_for_user(db: Session, user: User) -> Consumer | None:
 
 def has_supplier_permission(db: Session, user: User, supplier_id: UUID, allowed_roles: List[str]) -> bool:
     """Check if user has permission for supplier actions"""
+    """Check if user has permission for supplier actions"""
     staff = db.query(SupplierStaff).filter(
         SupplierStaff.user_id == user.id,
         SupplierStaff.supplier_id == supplier_id
@@ -143,6 +144,7 @@ def has_supplier_permission(db: Session, user: User, supplier_id: UUID, allowed_
 
 def is_linked(db: Session, consumer_id: UUID, supplier_id: UUID) -> bool:
     """Check if consumer has accepted link with supplier"""
+    """Check if consumer has accepted link with supplier"""
     link = db.query(ConsumerSupplierLink).filter(
         ConsumerSupplierLink.consumer_id == consumer_id,
         ConsumerSupplierLink.supplier_id == supplier_id,
@@ -153,6 +155,7 @@ def is_linked(db: Session, consumer_id: UUID, supplier_id: UUID) -> bool:
 
 
 def enrich_product_response(db: Session, product: Product) -> ProductResponse:
+    """Add supplier and category info to product"""
     """Add supplier and category info to product"""
     supplier = db.query(Supplier).filter(Supplier.id == product.supplier_id).first()
     category = db.query(Category).filter(Category.id == product.category_id).first()
@@ -175,7 +178,6 @@ def enrich_product_response(db: Session, product: Product) -> ProductResponse:
     )
 
 
-# ==================== Supplier Endpoints (Product Management) ====================
 
 @router.post("/", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 def create_product(
@@ -194,7 +196,6 @@ def create_product(
             detail="Only supplier staff can create products"
         )
 
-    # Check permissions (Owner or Manager only)
     if not has_supplier_permission(
         db, current_user, supplier.id,
         [SupplierRole.OWNER.value, SupplierRole.ADMIN.value]
@@ -204,7 +205,6 @@ def create_product(
             detail="Only Owner or Manager can create products"
         )
 
-    # Verify category exists
     category = db.query(Category).filter(Category.id == data.category_id).first()
     if not category:
         raise HTTPException(
@@ -212,7 +212,6 @@ def create_product(
             detail="Category not found"
         )
 
-    # Create product
     product = Product(
         supplier_id=supplier.id,
         category_id=data.category_id,
@@ -280,19 +279,16 @@ def get_product(
             detail="Product not found"
         )
 
-    # Check access permissions
     supplier = get_supplier_for_user(db, current_user)
     consumer = get_consumer_for_user(db, current_user)
 
     if supplier:
-        # Supplier can only see their own products
         if product.supplier_id != supplier.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You can only view your own products"
             )
     elif consumer:
-        # Consumer can only see products from linked suppliers
         if not is_linked(db, consumer.id, product.supplier_id):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -325,7 +321,6 @@ def update_product(
             detail="Product not found"
         )
 
-    # Check permissions
     if not has_supplier_permission(
         db, current_user, product.supplier_id,
         [SupplierRole.OWNER.value, SupplierRole.ADMIN.value]
@@ -335,7 +330,6 @@ def update_product(
             detail="Only Owner or Manager can update products"
         )
 
-    # Update fields
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(product, field, value)
@@ -364,7 +358,6 @@ def delete_product(
             detail="Product not found"
         )
 
-    # Check permissions
     if not has_supplier_permission(
         db, current_user, product.supplier_id,
         [SupplierRole.OWNER.value, SupplierRole.ADMIN.value]
@@ -374,14 +367,12 @@ def delete_product(
             detail="Only Owner or Manager can delete products"
         )
 
-    # Soft delete by setting is_active to False
     product.is_active = False
     db.commit()
 
     return None
 
 
-# ==================== Product Images ====================
 
 @router.post("/{product_id}/images", response_model=ProductImageResponse, status_code=status.HTTP_201_CREATED)
 def add_product_image(
@@ -401,7 +392,6 @@ def add_product_image(
             detail="Product not found"
         )
 
-    # Check permissions
     if not has_supplier_permission(
         db, current_user, product.supplier_id,
         [SupplierRole.OWNER.value, SupplierRole.ADMIN.value]
@@ -411,14 +401,12 @@ def add_product_image(
             detail="Only Owner or Manager can add product images"
         )
 
-    # If this is set as primary, unset other primary images
     if data.is_primary:
         db.query(ProductImage).filter(
             ProductImage.product_id == product_id,
             ProductImage.is_primary == True
         ).update({"is_primary": False})
 
-    # Create image
     image = ProductImage(
         product_id=product_id,
         image_url=data.image_url,
@@ -449,7 +437,6 @@ def delete_product_image(
             detail="Product not found"
         )
 
-    # Check permissions
     if not has_supplier_permission(
         db, current_user, product.supplier_id,
         [SupplierRole.OWNER.value, SupplierRole.ADMIN.value]
@@ -476,7 +463,6 @@ def delete_product_image(
     return None
 
 
-# ==================== Consumer Endpoints (Catalog Browsing) ====================
 
 @router.get("/catalog/browse", response_model=List[CatalogItem])
 def browse_catalog(
@@ -501,7 +487,6 @@ def browse_catalog(
             detail="Only consumers can browse catalog"
         )
 
-    # Get all linked suppliers
     links = db.query(ConsumerSupplierLink).filter(
         ConsumerSupplierLink.consumer_id == consumer.id,
         ConsumerSupplierLink.status == LinkStatus.ACCEPTED
@@ -510,14 +495,11 @@ def browse_catalog(
     linked_supplier_ids = [link.supplier_id for link in links]
 
     if not linked_supplier_ids:
-        return []  # No linked suppliers, return empty catalog
+        return []
 
-    # Build query
     query = db.query(Product).filter(Product.supplier_id.in_(linked_supplier_ids))
 
-    # Apply filters
     if supplier_id:
-        # Check if consumer is linked to this supplier
         if supplier_id not in linked_supplier_ids:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -548,7 +530,6 @@ def browse_catalog(
 
     products = query.all()
 
-    # Enrich with supplier and category info
     result = []
     for product in products:
         supplier = db.query(Supplier).filter(Supplier.id == product.supplier_id).first()
@@ -589,7 +570,6 @@ def get_linked_suppliers_with_products(
             detail="Only consumers can view linked suppliers"
         )
 
-    # Get all accepted links
     links = db.query(ConsumerSupplierLink).filter(
         ConsumerSupplierLink.consumer_id == consumer.id,
         ConsumerSupplierLink.status == LinkStatus.ACCEPTED
@@ -601,7 +581,6 @@ def get_linked_suppliers_with_products(
         if not supplier:
             continue
 
-        # Count active products
         product_count = db.query(Product).filter(
             Product.supplier_id == supplier.id,
             Product.is_active == True

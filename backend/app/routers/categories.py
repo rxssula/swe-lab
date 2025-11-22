@@ -12,7 +12,6 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/categories", tags=["categories"])
 
 
-# ==================== Request/Response Schemas ====================
 
 class CategoryCreate(BaseModel):
     name: str
@@ -36,7 +35,6 @@ class CategoryResponse(BaseModel):
         from_attributes = True
 
 
-# ==================== Endpoints ====================
 
 @router.post("/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 def create_category(
@@ -49,7 +47,6 @@ def create_category(
     For MVP, any authenticated user can create categories.
     In production, this should be restricted to Platform Admins.
     """
-    # If parent category specified, verify it exists
     if data.parent_category_id:
         parent = db.query(Category).filter(
             Category.id == data.parent_category_id
@@ -130,7 +127,6 @@ def update_category(
             detail="Category not found"
         )
 
-    # Update fields
     update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(category, field, value)
@@ -160,7 +156,6 @@ def delete_category(
             detail="Category not found"
         )
 
-    # Check if any products use this category
     from app.models.user import Product
     products_count = db.query(Product).filter(
         Product.category_id == category_id

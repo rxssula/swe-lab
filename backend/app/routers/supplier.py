@@ -15,7 +15,6 @@ from app.schemas import SignupResponse, UserRead
 router = APIRouter(prefix="/suppliers", tags=["suppliers"])
 
 
-# Request schema for staff invitation
 class StaffInviteRequest(BaseModel):
     email: EmailStr
     role: SupplierRole
@@ -68,16 +67,10 @@ def invite_supplier_staff(
 
   invitation_link = f"https://yourapp.com/accept-invitation?token={token}"
 
-  # TODO: Send actual email using email service
-  # send_email(
-  #     to=email,
-  #     subject="You're invited to join {business_name}",
-  #     body=f"Click here to accept: {invitation_link}"
-  # )
 
   return {
       "message": "Invitation sent",
-      "invitation_link": invitation_link,  # Return for testing
+      "invitation_link": invitation_link,
       "expires_at": invitation.expires_at
   }
 

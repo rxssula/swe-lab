@@ -16,7 +16,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -38,10 +37,12 @@ app.include_router(orders.router)
 @app.get("/")
 async def root():
     """Root endpoint - API is alive"""
+    """Root endpoint - API is alive"""
     return {"status": "ok", "message": "B2B Marketplace API is running"}
 
 @app.get("/health")
 async def health_check():
+    """Health check endpoint for monitoring and keeping service awake"""
     """Health check endpoint for monitoring and keeping service awake"""
     return {
         "status": "healthy",

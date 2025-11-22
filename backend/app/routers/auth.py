@@ -125,7 +125,7 @@ def signup_supplier(data: SupplierSignup, db: Session = Depends(get_db)):
             supplier_id=supplier.id,
             tier=data.subscription_tier,
             start_date=datetime.now(),
-            end_date=datetime.now() + timedelta(days=14),  # 14 day trial
+            end_date=datetime.now() + timedelta(days=14),
             status="active",
             amount=Decimal(0),
         )
@@ -173,17 +173,14 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Determine user type and role
     user_type = None
     role = None
 
-    # Check if user is a consumer staff
     consumer_staff = db.query(ConsumerStaff).filter(ConsumerStaff.user_id == user.id).first()
     if consumer_staff:
         user_type = "consumer"
         role = consumer_staff.role
 
-    # Check if user is a supplier staff
     supplier_staff = db.query(SupplierStaff).filter(SupplierStaff.user_id == user.id).first()
     if supplier_staff:
         user_type = "supplier"
@@ -195,7 +192,6 @@ async def login_for_access_token(
             detail="User is not associated with any business entity"
         )
 
-    # Update last login time
     user.last_login_at = datetime.now()
     db.commit()
 
@@ -230,6 +226,7 @@ def accept_invitation(
         db: Session = Depends(get_db)
 ):
     """Staff member accepts invitation and creates account"""
+    """Staff member accepts invitation and creates account"""
 
     invitation = db.query(StaffInvitation).filter(
         StaffInvitation.token == token,
@@ -257,7 +254,6 @@ def accept_invitation(
         db.add(user)
         db.flush()
         user_type = ""
-        # 5. Link to consumer or supplier
         if invitation.consumer_id:
             consumer_staff = ConsumerStaff(
                 user_id=user.id,

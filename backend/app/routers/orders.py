@@ -19,9 +19,8 @@ from app.schemas import OrderCreate, OrderRead, OrderUpdate, OrderItemRead
 router = APIRouter(prefix="/orders", tags=["orders"])
 
 
-# ==================== Helper Functions ====================
-
 def get_consumer_for_user(user: User, db: Session) -> Consumer:
+    """Get the consumer entity for the current user"""
     """Get the consumer entity for the current user"""
     consumer_staff = db.query(ConsumerStaff).filter(
         ConsumerStaff.user_id == user.id
@@ -48,6 +47,7 @@ def get_consumer_for_user(user: User, db: Session) -> Consumer:
 
 def get_supplier_for_user(user: User, db: Session) -> Supplier:
     """Get the supplier entity for the current user"""
+    """Get the supplier entity for the current user"""
     supplier_staff = db.query(SupplierStaff).filter(
         SupplierStaff.user_id == user.id
     ).first()
@@ -73,6 +73,7 @@ def get_supplier_for_user(user: User, db: Session) -> Supplier:
 
 def has_consumer_permission(user: User, consumer_id: UUID, db: Session) -> bool:
     """Check if user has permission for this consumer"""
+    """Check if user has permission for this consumer"""
     consumer_staff = db.query(ConsumerStaff).filter(
         and_(
             ConsumerStaff.user_id == user.id,
@@ -84,6 +85,7 @@ def has_consumer_permission(user: User, consumer_id: UUID, db: Session) -> bool:
 
 def has_supplier_permission(user: User, supplier_id: UUID, db: Session) -> bool:
     """Check if user has permission for this supplier"""
+    """Check if user has permission for this supplier"""
     supplier_staff = db.query(SupplierStaff).filter(
         and_(
             SupplierStaff.user_id == user.id,
@@ -94,6 +96,7 @@ def has_supplier_permission(user: User, supplier_id: UUID, db: Session) -> bool:
 
 
 def verify_link_exists(consumer_id: UUID, supplier_id: UUID, db: Session):
+    """Verify that an active link exists between consumer and supplier"""
     """Verify that an active link exists between consumer and supplier"""
     link = db.query(ConsumerSupplierLink).filter(
         and_(
@@ -111,30 +114,17 @@ def verify_link_exists(consumer_id: UUID, supplier_id: UUID, db: Session):
     return link
 
 
-# ==================== Consumer Endpoints ====================
-
 @router.post("/", response_model=OrderRead, status_code=status.HTTP_201_CREATED)
 def create_order(
     order_data: OrderCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Create a new order (Consumer side).
-
-    - Consumer creates order with multiple products
-    - Specify quantities for each product
-    - Add delivery notes/instructions
-    - Select delivery/pickup option
-    - Automatically calculates order total
-    """
-    # Get consumer for current user
+    """Create a new order with multiple products"""
+    """Create a new order with multiple products"""
     consumer = get_consumer_for_user(current_user, db)
-
-    # Verify link exists with supplier
     verify_link_exists(consumer.id, order_data.supplier_id, db)
 
-    # Verify all products belong to the supplier and calculate total
     total_amount = Decimal('0.00')
     order_items_data = []
 
@@ -153,21 +143,18 @@ def create_order(
                 detail=f"Product {item.product_id} not found or not available from this supplier"
             )
 
-        # Check minimum order quantity
         if item.quantity < product.minimum_order_quantity:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Product {product.name} requires minimum order quantity of {product.minimum_order_quantity}"
             )
 
-        # Check stock availability
         if item.quantity > product.stock_level:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Insufficient stock for {product.name}. Available: {product.stock_level}, Requested: {item.quantity}"
             )
 
-        # Calculate subtotal
         subtotal = product.price_per_unit * item.quantity
         total_amount += subtotal
 
@@ -178,7 +165,6 @@ def create_order(
             "subtotal": subtotal
         })
 
-    # Create order
     new_order = Order(
         consumer_id=consumer.id,
         supplier_id=order_data.supplier_id,
@@ -189,9 +175,8 @@ def create_order(
     )
 
     db.add(new_order)
-    db.flush()  # Get the order ID
+    db.flush()
 
-    # Create order items
     for item_data in order_items_data:
         order_item = OrderItem(
             order_id=new_order.id,
@@ -214,16 +199,9 @@ def get_consumer_order_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Get order history for consumer.
-
-    - View all orders placed by the consumer
-    - Filter by status (pending, accepted, rejected, completed, cancelled)
-    - Filter by supplier
-    - Paginated results
-    """
+    """Get order history for consumer with optional filtering"""
+    """Get order history for consumer with optional filtering"""
     consumer = get_consumer_for_user(current_user, db)
-
     query = db.query(Order).filter(Order.consumer_id == consumer.id)
 
     if status:
@@ -233,7 +211,6 @@ def get_consumer_order_history(
         query = query.filter(Order.supplier_id == supplier_id)
 
     orders = query.order_by(Order.created_at.desc()).offset(skip).limit(limit).all()
-
     return orders
 
 
@@ -243,13 +220,9 @@ def cancel_order(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Cancel an order (Consumer side).
-
-    - Only pending or accepted orders can be cancelled
-    """
+    """Cancel a pending or accepted order"""
+    """Cancel a pending or accepted order"""
     consumer = get_consumer_for_user(current_user, db)
-
     order = db.query(Order).filter(
         and_(
             Order.id == order_id,
@@ -271,14 +244,10 @@ def cancel_order(
 
     order.status = OrderStatus.CANCELLED
     order.cancelled_at = datetime.utcnow()
-
     db.commit()
     db.refresh(order)
-
     return order
 
-
-# ==================== Supplier Endpoints ====================
 
 @router.get("/supplier/incoming", response_model=List[OrderRead])
 def get_incoming_orders(
@@ -289,16 +258,9 @@ def get_incoming_orders(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    View incoming orders (Supplier side).
-
-    - View all orders for the supplier
-    - Filter by status
-    - Filter by consumer
-    - Paginated results
-    """
+    """View incoming orders for supplier with optional filtering"""
+    """View incoming orders for supplier with optional filtering"""
     supplier = get_supplier_for_user(current_user, db)
-
     query = db.query(Order).filter(Order.supplier_id == supplier.id)
 
     if status:
@@ -308,7 +270,6 @@ def get_incoming_orders(
         query = query.filter(Order.consumer_id == consumer_id)
 
     orders = query.order_by(Order.created_at.desc()).offset(skip).limit(limit).all()
-
     return orders
 
 
@@ -318,13 +279,9 @@ def accept_order(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Accept an order (Supplier side).
-
-    - Only pending orders can be accepted
-    """
+    """Accept a pending order"""
+    """Accept a pending order"""
     supplier = get_supplier_for_user(current_user, db)
-
     order = db.query(Order).filter(
         and_(
             Order.id == order_id,
@@ -346,10 +303,8 @@ def accept_order(
 
     order.status = OrderStatus.ACCEPTED
     order.accepted_at = datetime.utcnow()
-
     db.commit()
     db.refresh(order)
-
     return order
 
 
@@ -360,14 +315,9 @@ def reject_order(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Reject an order (Supplier side).
-
-    - Only pending orders can be rejected
-    - Requires a rejection reason
-    """
+    """Reject a pending order with reason"""
+    """Reject a pending order with reason"""
     supplier = get_supplier_for_user(current_user, db)
-
     order = db.query(Order).filter(
         and_(
             Order.id == order_id,
@@ -395,10 +345,8 @@ def reject_order(
 
     order.status = OrderStatus.REJECTED
     order.rejection_reason = rejection_reason
-
     db.commit()
     db.refresh(order)
-
     return order
 
 
@@ -408,13 +356,9 @@ def complete_order(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Mark order as completed (Supplier side).
-
-    - Only accepted orders can be marked as completed
-    """
+    """Mark an accepted order as completed"""
+    """Mark an accepted order as completed"""
     supplier = get_supplier_for_user(current_user, db)
-
     order = db.query(Order).filter(
         and_(
             Order.id == order_id,
@@ -436,14 +380,10 @@ def complete_order(
 
     order.status = OrderStatus.COMPLETED
     order.completed_at = datetime.utcnow()
-
     db.commit()
     db.refresh(order)
-
     return order
 
-
-# ==================== Shared Endpoints ====================
 
 @router.get("/{order_id}", response_model=OrderRead)
 def get_order_details(
@@ -451,12 +391,8 @@ def get_order_details(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Get order details.
-
-    - Accessible by both consumer and supplier
-    - Returns full order information including items
-    """
+    """Get order details with items"""
+    """Get order details with items"""
     order = db.query(Order).filter(Order.id == order_id).first()
 
     if not order:
@@ -465,7 +401,6 @@ def get_order_details(
             detail="Order not found"
         )
 
-    # Check if user has permission to view this order
     has_permission = (
         has_consumer_permission(current_user, order.consumer_id, db) or
         has_supplier_permission(current_user, order.supplier_id, db)
@@ -488,16 +423,9 @@ def reorder(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Reorder - Create a new order based on a previous order (Consumer side).
-
-    - Copies items from the original order
-    - Creates a new order with the same products and quantities
-    - Can update delivery notes and delivery option
-    """
+    """Create a new order based on a previous order"""
+    """Create a new order based on a previous order"""
     consumer = get_consumer_for_user(current_user, db)
-
-    # Get original order
     original_order = db.query(Order).filter(
         and_(
             Order.id == order_id,
@@ -511,10 +439,8 @@ def reorder(
             detail="Original order not found"
         )
 
-    # Verify link still exists
     verify_link_exists(consumer.id, original_order.supplier_id, db)
 
-    # Verify all products are still available and recalculate total
     total_amount = Decimal('0.00')
     new_order_items_data = []
 
@@ -533,14 +459,12 @@ def reorder(
                 detail=f"Product {item.product_id} is no longer available"
             )
 
-        # Check stock availability
         if item.quantity > product.stock_level:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Insufficient stock for {product.name}. Available: {product.stock_level}, Requested: {item.quantity}"
             )
 
-        # Use current price (may have changed)
         subtotal = product.price_per_unit * item.quantity
         total_amount += subtotal
 
@@ -551,7 +475,6 @@ def reorder(
             "subtotal": subtotal
         })
 
-    # Create new order
     new_order = Order(
         consumer_id=consumer.id,
         supplier_id=original_order.supplier_id,
@@ -564,7 +487,6 @@ def reorder(
     db.add(new_order)
     db.flush()
 
-    # Create order items
     for item_data in new_order_items_data:
         order_item = OrderItem(
             order_id=new_order.id,
@@ -574,5 +496,4 @@ def reorder(
 
     db.commit()
     db.refresh(new_order)
-
     return new_order

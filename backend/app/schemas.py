@@ -28,17 +28,15 @@ class UserRead(UserBase):
         from_attributes = True
 
 
-# Signup Schemas
 class ConsumerSignup(BaseModel):
     """Schema for consumer (restaurant/hotel) signup"""
-    # Business info
+    """Schema for consumer (restaurant/hotel) signup"""
     business_name: str
     business_type: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
     country: Optional[str] = None
 
-    # Owner user info
     email: EmailStr
     password: str
     phone_number: Optional[str] = None
@@ -46,29 +44,28 @@ class ConsumerSignup(BaseModel):
 
 class SupplierSignup(BaseModel):
     """Schema for supplier (farmer/producer) signup"""
-    # Company info
+    """Schema for supplier (farmer/producer) signup"""
     company_name: str
     business_type: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
     country: Optional[str] = None
 
-    # Owner user info
     email: EmailStr
     password: str
     phone_number: Optional[str] = None
 
-    # Optional subscription tier
     subscription_tier: Optional[str] = "trial"
 
 
 class SignupResponse(BaseModel):
     """Response after successful signup with auto-login"""
+    """Response after successful signup with auto-login"""
     access_token: str
     token_type: str
     user: UserRead
-    user_type: str  # "consumer", "supplier", "admin"
-    role: str  # "owner", "admin", "sales", etc.
+    user_type: str
+    role: str
 
 
 class ConsumerBase(BaseModel):
@@ -387,7 +384,6 @@ class SupplierAnalyticsRead(SupplierAnalyticsBase):
         from_attributes = True
 
 
-# Order Schemas
 class OrderItemBase(BaseModel):
     product_id: UUID
     quantity: int
@@ -409,7 +405,7 @@ class OrderItemRead(OrderItemBase):
 
 class OrderBase(BaseModel):
     delivery_notes: Optional[str] = None
-    delivery_option: str  # "delivery" or "pickup"
+    delivery_option: str
 
 
 class OrderCreate(OrderBase):
