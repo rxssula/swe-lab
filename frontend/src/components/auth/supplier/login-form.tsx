@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Link } from '@tanstack/react-router'
+import { useLogin } from '@/lib/hooks/use-login'
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -41,9 +42,20 @@ export function SupplierLoginForm({
     },
   })
 
+  const loginMutation = useLogin()
+
   const onSubmit = async (data: LoginFormValues) => {
-    // TODO: Implement login API call
-    console.log('Login data:', data)
+    try {
+      await loginMutation.mutateAsync({
+        email: data.email,
+        password: data.password,
+      })
+    } catch (error) {
+      // Error is handled by react-query, but we can set form error if needed
+      form.setError('root', {
+        message: error instanceof Error ? error.message : 'Login failed',
+      })
+    }
   }
 
   return (
@@ -88,8 +100,17 @@ export function SupplierLoginForm({
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full">
-                Login
+              {form.formState.errors.root && (
+                <div className="text-sm text-red-500">
+                  {form.formState.errors.root.message}
+                </div>
+              )}
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loginMutation.isPending}
+              >
+                {loginMutation.isPending ? 'Logging in...' : 'Login'}
               </Button>
               <FormDescription className="text-center">
                 Don&apos;t have an account?{' '}

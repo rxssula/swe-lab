@@ -39,8 +39,38 @@ export interface SignupResponse {
   role: string
 }
 
+export interface LoginRequest {
+  email: string
+  password: string
+}
+
 export interface ApiError {
   detail: string
+}
+
+export async function login(data: LoginRequest): Promise<SignupResponse> {
+  // OAuth2PasswordRequestForm expects form-encoded data
+  const formData = new URLSearchParams()
+  formData.append('username', data.email)
+  formData.append('password', data.password)
+  formData.append('grant_type', 'password')
+
+  const response = await fetch(getApiUrl('auth/token'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: formData.toString(),
+  })
+
+  if (!response.ok) {
+    const error: ApiError = await response.json().catch(() => ({
+      detail: 'An error occurred during login',
+    }))
+    throw new Error(error.detail || `Login failed: ${response.statusText}`)
+  }
+
+  return response.json()
 }
 
 export async function signupConsumer(
