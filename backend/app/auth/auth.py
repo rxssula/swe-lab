@@ -3,7 +3,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 import jwt
-from fastapi import Depends, FastAPI, HTTPException, status
+from enum import Enum
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from pwdlib import PasswordHash
@@ -18,10 +19,15 @@ from app.core.config import settings
 from app.schemas import UserRead
 
 
+class UserType(Enum):
+   Supplier: "Supplier"
+   Consumer: "Consumer"
 
 class Token(BaseModel):
     access_token: str
     token_type: str
+    user_type: str
+    role: str
 
 
 class TokenData(BaseModel):
@@ -59,7 +65,7 @@ def authenticate_user(db: Session, email:str, password: str):
     return user
 
 
-def create_access_token(data: dict):
+def create_access_token(data: dict, user_type: str = None, role: str = None):
     to_encode = data.copy()
 
     expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -70,7 +76,7 @@ def create_access_token(data: dict):
         expire = datetime.now(timezone.utc) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-    return Token(access_token=encoded_jwt, token_type="bearer")
+    return Token(access_token=encoded_jwt, token_type="bearer", user_type=user_type, role=role)
 
 
 async def get_current_user(
@@ -94,4 +100,3 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
     return UserRead.model_validate(user)
-

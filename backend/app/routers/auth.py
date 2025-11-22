@@ -26,7 +26,6 @@ def signup_consumer(data: ConsumerSignup, db: Session = Depends(get_db)):
     """
     if db.query(User).filter(User.email == data.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
-
     try:
         user = User(
             email=str(data.email),
@@ -58,14 +57,17 @@ def signup_consumer(data: ConsumerSignup, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(user)
 
-        token = create_access_token(data={"sub": str(user.id)})
-
+        token = create_access_token(
+            data={"sub": str(user.id)},
+            user_type="consumer",
+            role=ConsumerRole.OWNER.value
+        )
         return SignupResponse(
             access_token=token.access_token,
             token_type=token.token_type,
             user=UserRead.model_validate(user),
-            user_type="consumer",
-            role=ConsumerRole.OWNER.value
+            user_type=token.user_type,
+            role=token.role
         )
 
     except IntegrityError as e:
@@ -132,14 +134,18 @@ def signup_supplier(data: SupplierSignup, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(user)
 
-        token = create_access_token(data={"sub": str(user.id)})
+        token = create_access_token(
+            data={"sub": str(user.id)},
+            user_type="supplier",
+            role=SupplierRole.OWNER.value
+        )
 
         return SignupResponse(
             access_token=token.access_token,
             token_type=token.token_type,
             user=UserRead.model_validate(user),
-            user_type="supplier",
-            role=SupplierRole.OWNER.value
+            user_type=token.user_type,
+            role=token.role
         )
 
     except IntegrityError as e:
@@ -193,14 +199,18 @@ async def login_for_access_token(
     user.last_login_at = datetime.now()
     db.commit()
 
-    token = create_access_token(data={"sub": str(user.id)})
+    token = create_access_token(
+        data={"sub": str(user.id)},
+        user_type=user_type,
+        role=role
+    )
 
     return SignupResponse(
         access_token=token.access_token,
         token_type=token.token_type,
         user=UserRead.model_validate(user),
-        user_type=user_type,
-        role=role
+        user_type=token.user_type,
+        role=token.role
     )
 
 
@@ -272,14 +282,18 @@ def accept_invitation(
         db.commit()
         db.refresh(user)
 
-        access_token = create_access_token(data={"sub": str(user.id)})
+        access_token = create_access_token(
+            data={"sub": str(user.id)},
+            user_type=user_type,
+            role=str(invitation.role)
+        )
 
         return SignupResponse(
             access_token=access_token.access_token,
             token_type=access_token.token_type,
             user=UserRead.model_validate(user),
-            user_type=user_type,
-            role=str(invitation.role)
+            user_type=access_token.user_type,
+            role=access_token.role
         )
 
     except Exception as e:
