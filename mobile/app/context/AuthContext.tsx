@@ -68,6 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: form.toString(),
         });
+        console.log(resp);
         if (!resp.ok) throw new Error("Login failed");
         const body = await resp.json();
         const t = body.access || body.token || body?.access_token;
@@ -84,11 +85,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log("profile:", profile);
             setUser(profile);
             let role = profile.role;
-            if (role === "consumer") {
+            if (role != "consumer") {
               router.replace("/consumer/(tabs)/dashboard");
             } else {
               router.replace("/supplier/(tabs)/dashboard");
             }
+
+
             
         }
       } finally {
