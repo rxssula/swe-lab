@@ -183,9 +183,11 @@ class ChatMessage(Base):
     sent_at: Mapped[datetime] = mapped_column(DateTime)
     read_at: Mapped[datetime | None] = mapped_column(DateTime)
     message_type: Mapped[str] = mapped_column(String)
+    product_id: Mapped[UUID | None] = mapped_column(ForeignKey("products.id"), nullable=True)
 
     thread: Mapped["ChatThread"] = relationship(back_populates="messages")
     attachments: Mapped[list["ChatAttachment"]] = relationship(back_populates="message")
+    product: Mapped["Product"] = relationship()
 
 
 class ChatAttachment(Base):
@@ -309,4 +311,18 @@ class OrderItem(Base):
 
     order: Mapped["Order"] = relationship(back_populates="items")
     product: Mapped["Product"] = relationship(back_populates="order_items")
+
+
+class CannedReply(Base):
+    __tablename__ = "canned_replies"
+
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    supplier_id: Mapped[PyUUID] = mapped_column(ForeignKey("suppliers.id"))
+    title: Mapped[str] = mapped_column(String)
+    content: Mapped[str] = mapped_column(String)
+    created_by: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    supplier: Mapped["Supplier"] = relationship()
 

@@ -270,6 +270,7 @@ class ChatMessageBase(BaseModel):
     message_type: Optional[str] = "TEXT"
     sent_at: datetime
     read_at: Optional[datetime] = None
+    product_id: Optional[UUID] = None
 
 
 class ChatMessageCreate(ChatMessageBase):
@@ -431,6 +432,32 @@ class OrderRead(OrderBase):
     completed_at: Optional[datetime] = None
     cancelled_at: Optional[datetime] = None
     items: List[OrderItemRead] = []
+
+    class Config:
+        from_attributes = True
+
+
+class CannedReplyBase(BaseModel):
+    title: str
+    content: str
+    is_active: Optional[bool] = True
+
+
+class CannedReplyCreate(CannedReplyBase):
+    pass
+
+
+class CannedReplyUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class CannedReplyRead(CannedReplyBase):
+    id: UUID
+    supplier_id: UUID
+    created_by: UUID
+    created_at: datetime
 
     class Config:
         from_attributes = True

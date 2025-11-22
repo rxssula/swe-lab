@@ -16,6 +16,11 @@ class Settings:
         "http://localhost:3000,http://127.0.0.1:3000"
     ).split(",")
 
+    # File upload settings
+    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "uploads")
+    MAX_FILE_SIZE: int = int(os.getenv("MAX_FILE_SIZE", str(10 * 1024 * 1024)))  # 10MB default
+    MAX_AUDIO_SIZE: int = int(os.getenv("MAX_AUDIO_SIZE", str(5 * 1024 * 1024)))  # 5MB default
+
     def __init__(self):
         if not self.SECRET_KEY:
             raise ValueError("SECRET_KEY must be set in environment variables")

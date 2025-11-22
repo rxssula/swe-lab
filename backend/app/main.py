@@ -2,8 +2,9 @@ from itertools import product
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-from app.routers import users, auth, consumer, supplier, links, products, staff, categories, orders
+from app.routers import users, auth, consumer, supplier, links, products, staff, categories, orders, chat
 from app.core.db import engine
 from app.core.config import settings
 from app import models
@@ -33,6 +34,14 @@ app.include_router(products.router)
 app.include_router(staff.router)
 app.include_router(categories.router)
 app.include_router(orders.router)
+app.include_router(chat.router)
+
+# Mount static files for uploads
+import os
+upload_dir = settings.UPLOAD_DIR
+if not os.path.exists(upload_dir):
+    os.makedirs(upload_dir)
+app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 
 @app.get("/")
 async def root():
