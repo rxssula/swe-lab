@@ -4,7 +4,7 @@ from uuid import UUID
 from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr
-from app.models.enums import IncidentStatus, LinkStatus, AdminRole, SupplierRole, ConsumerRole
+from app.models.enums import IncidentStatus, LinkStatus, AdminRole, SupplierRole, ConsumerRole, OrderStatus
 
 
 
@@ -382,6 +382,59 @@ class SupplierAnalyticsCreate(SupplierAnalyticsBase):
 class SupplierAnalyticsRead(SupplierAnalyticsBase):
     id: UUID
     supplier_id: UUID
+
+    class Config:
+        from_attributes = True
+
+
+# Order Schemas
+class OrderItemBase(BaseModel):
+    product_id: UUID
+    quantity: int
+
+
+class OrderItemCreate(OrderItemBase):
+    pass
+
+
+class OrderItemRead(OrderItemBase):
+    id: UUID
+    order_id: UUID
+    unit_price: Decimal
+    subtotal: Decimal
+
+    class Config:
+        from_attributes = True
+
+
+class OrderBase(BaseModel):
+    delivery_notes: Optional[str] = None
+    delivery_option: str  # "delivery" or "pickup"
+
+
+class OrderCreate(OrderBase):
+    supplier_id: UUID
+    items: List[OrderItemCreate]
+
+
+class OrderUpdate(BaseModel):
+    status: Optional[OrderStatus] = None
+    rejection_reason: Optional[str] = None
+
+
+class OrderRead(OrderBase):
+    id: UUID
+    consumer_id: UUID
+    supplier_id: UUID
+    status: OrderStatus
+    total_amount: Decimal
+    rejection_reason: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    accepted_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
+    items: List[OrderItemRead] = []
 
     class Config:
         from_attributes = True

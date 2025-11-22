@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
-from app.models.enums import IncidentStatus, LinkStatus, AdminRole, SupplierRole, InvitationStatus
+from app.models.enums import IncidentStatus, LinkStatus, AdminRole, SupplierRole, InvitationStatus, OrderStatus
 
 
 class User(Base):
@@ -41,6 +41,7 @@ class Consumer(Base):
 
     staff: Mapped[list["ConsumerStaff"]] = relationship(back_populates="consumer")
     links: Mapped[list["ConsumerSupplierLink"]] = relationship(back_populates="consumer")
+    orders: Mapped[list["Order"]] = relationship(back_populates="consumer", foreign_keys="Order.consumer_id")
 
 
 class ConsumerStaff(Base):
@@ -71,6 +72,7 @@ class Supplier(Base):
     products: Mapped[list["Product"]] = relationship(back_populates="supplier")
     links: Mapped[list["ConsumerSupplierLink"]] = relationship(back_populates="supplier")
     analytics: Mapped[list["SupplierAnalytics"]] = relationship(back_populates="supplier")
+    orders: Mapped[list["Order"]] = relationship(back_populates="supplier", foreign_keys="Order.supplier_id")
 
 
 class SupplierStaff(Base):
@@ -127,6 +129,7 @@ class Product(Base):
     supplier: Mapped["Supplier"] = relationship(back_populates="products")
     category: Mapped["Category"] = relationship(back_populates="products")
     images: Mapped[list["ProductImage"]] = relationship(back_populates="product")
+    order_items: Mapped[list["OrderItem"]] = relationship(back_populates="product")
 
 
 class ProductImage(Base):
@@ -270,4 +273,40 @@ class StaffInvitation(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     expires_at: Mapped[datetime] = mapped_column(DateTime)
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    consumer_id: Mapped[PyUUID] = mapped_column(ForeignKey("consumers.id"))
+    supplier_id: Mapped[PyUUID] = mapped_column(ForeignKey("suppliers.id"))
+    status: Mapped[OrderStatus] = mapped_column(SQLEnum(OrderStatus), default=OrderStatus.PENDING)
+    total_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    delivery_notes: Mapped[str | None] = mapped_column(String, nullable=True)
+    delivery_option: Mapped[str] = mapped_column(String)  # "delivery" or "pickup"
+    rejection_reason: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    consumer: Mapped["Consumer"] = relationship(back_populates="orders", foreign_keys=[consumer_id])
+    supplier: Mapped["Supplier"] = relationship(back_populates="orders", foreign_keys=[supplier_id])
+    items: Mapped[list["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
+
+
+class OrderItem(Base):
+    __tablename__ = "order_items"
+
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    order_id: Mapped[PyUUID] = mapped_column(ForeignKey("orders.id"))
+    product_id: Mapped[PyUUID] = mapped_column(ForeignKey("products.id"))
+    quantity: Mapped[int] = mapped_column(Integer)
+    unit_price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    subtotal: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+
+    order: Mapped["Order"] = relationship(back_populates="items")
+    product: Mapped["Product"] = relationship(back_populates="order_items")
 

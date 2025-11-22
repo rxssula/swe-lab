@@ -3,7 +3,7 @@ from itertools import product
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import users, auth, consumer, supplier, links, products, staff, categories
+from app.routers import users, auth, consumer, supplier, links, products, staff, categories, orders
 from app.core.db import engine
 from app.core.config import settings
 from app import models
@@ -33,6 +33,7 @@ app.include_router(links.router)
 app.include_router(products.router)
 app.include_router(staff.router)
 app.include_router(categories.router)
+app.include_router(orders.router)
 
 @app.get("/")
 async def root():
