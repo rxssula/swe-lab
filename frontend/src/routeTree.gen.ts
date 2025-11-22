@@ -10,8 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as SignupIndexRouteImport } from './routes/signup/index'
-import { Route as LoginIndexRouteImport } from './routes/login/index'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as AuthSupplierSignupIndexRouteImport } from './routes/auth/supplier/signup/index'
 import { Route as AuthSupplierLoginIndexRouteImport } from './routes/auth/supplier/login/index'
@@ -21,16 +19,6 @@ import { Route as AuthConsumerLoginIndexRouteImport } from './routes/auth/consum
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SignupIndexRoute = SignupIndexRouteImport.update({
-  id: '/signup/',
-  path: '/signup/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginIndexRoute = LoginIndexRouteImport.update({
-  id: '/login/',
-  path: '/login/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthIndexRoute = AuthIndexRouteImport.update({
@@ -62,8 +50,6 @@ const AuthConsumerLoginIndexRoute = AuthConsumerLoginIndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthIndexRoute
-  '/login': typeof LoginIndexRoute
-  '/signup': typeof SignupIndexRoute
   '/auth/consumer/login': typeof AuthConsumerLoginIndexRoute
   '/auth/consumer/signup': typeof AuthConsumerSignupIndexRoute
   '/auth/supplier/login': typeof AuthSupplierLoginIndexRoute
@@ -72,8 +58,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthIndexRoute
-  '/login': typeof LoginIndexRoute
-  '/signup': typeof SignupIndexRoute
   '/auth/consumer/login': typeof AuthConsumerLoginIndexRoute
   '/auth/consumer/signup': typeof AuthConsumerSignupIndexRoute
   '/auth/supplier/login': typeof AuthSupplierLoginIndexRoute
@@ -83,8 +67,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth/': typeof AuthIndexRoute
-  '/login/': typeof LoginIndexRoute
-  '/signup/': typeof SignupIndexRoute
   '/auth/consumer/login/': typeof AuthConsumerLoginIndexRoute
   '/auth/consumer/signup/': typeof AuthConsumerSignupIndexRoute
   '/auth/supplier/login/': typeof AuthSupplierLoginIndexRoute
@@ -95,8 +77,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
-    | '/login'
-    | '/signup'
     | '/auth/consumer/login'
     | '/auth/consumer/signup'
     | '/auth/supplier/login'
@@ -105,8 +85,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
-    | '/login'
-    | '/signup'
     | '/auth/consumer/login'
     | '/auth/consumer/signup'
     | '/auth/supplier/login'
@@ -115,8 +93,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/auth/'
-    | '/login/'
-    | '/signup/'
     | '/auth/consumer/login/'
     | '/auth/consumer/signup/'
     | '/auth/supplier/login/'
@@ -126,8 +102,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthIndexRoute: typeof AuthIndexRoute
-  LoginIndexRoute: typeof LoginIndexRoute
-  SignupIndexRoute: typeof SignupIndexRoute
   AuthConsumerLoginIndexRoute: typeof AuthConsumerLoginIndexRoute
   AuthConsumerSignupIndexRoute: typeof AuthConsumerSignupIndexRoute
   AuthSupplierLoginIndexRoute: typeof AuthSupplierLoginIndexRoute
@@ -141,20 +115,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signup/': {
-      id: '/signup/'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login/': {
-      id: '/login/'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/': {
@@ -198,8 +158,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthIndexRoute: AuthIndexRoute,
-  LoginIndexRoute: LoginIndexRoute,
-  SignupIndexRoute: SignupIndexRoute,
   AuthConsumerLoginIndexRoute: AuthConsumerLoginIndexRoute,
   AuthConsumerSignupIndexRoute: AuthConsumerSignupIndexRoute,
   AuthSupplierLoginIndexRoute: AuthSupplierLoginIndexRoute,
