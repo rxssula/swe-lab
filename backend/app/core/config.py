@@ -11,10 +11,14 @@ class Settings:
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
-    CORS_ORIGINS: list = os.getenv(
-        "CORS_ORIGINS",
-        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173"
-    ).split(",")
+    CORS_ORIGINS: list = [
+        origin.strip() 
+        for origin in os.getenv(
+            "CORS_ORIGINS",
+            "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173"
+        ).split(",")
+        if origin.strip()
+    ]
 
     # File upload settings
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "uploads")
