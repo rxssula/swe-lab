@@ -9,22 +9,40 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
+import { Route as DashboardCatalogIndexRouteImport } from './routes/dashboard/catalog/index'
 import { Route as AuthSupplierSignupIndexRouteImport } from './routes/auth/supplier/signup/index'
 import { Route as AuthSupplierLoginIndexRouteImport } from './routes/auth/supplier/login/index'
 import { Route as AuthConsumerSignupIndexRouteImport } from './routes/auth/consumer/signup/index'
 import { Route as AuthConsumerLoginIndexRouteImport } from './routes/auth/consumer/login/index'
 
+const DashboardRouteRoute = DashboardRouteRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
 const AuthIndexRoute = AuthIndexRouteImport.update({
   id: '/auth/',
   path: '/auth/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardCatalogIndexRoute = DashboardCatalogIndexRouteImport.update({
+  id: '/catalog/',
+  path: '/catalog/',
+  getParentRoute: () => DashboardRouteRoute,
 } as any)
 const AuthSupplierSignupIndexRoute = AuthSupplierSignupIndexRouteImport.update({
   id: '/auth/supplier/signup/',
@@ -49,7 +67,10 @@ const AuthConsumerLoginIndexRoute = AuthConsumerLoginIndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRouteRouteWithChildren
   '/auth': typeof AuthIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/catalog': typeof DashboardCatalogIndexRoute
   '/auth/consumer/login': typeof AuthConsumerLoginIndexRoute
   '/auth/consumer/signup': typeof AuthConsumerSignupIndexRoute
   '/auth/supplier/login': typeof AuthSupplierLoginIndexRoute
@@ -58,6 +79,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthIndexRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/dashboard/catalog': typeof DashboardCatalogIndexRoute
   '/auth/consumer/login': typeof AuthConsumerLoginIndexRoute
   '/auth/consumer/signup': typeof AuthConsumerSignupIndexRoute
   '/auth/supplier/login': typeof AuthSupplierLoginIndexRoute
@@ -66,7 +89,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRouteRouteWithChildren
   '/auth/': typeof AuthIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/catalog/': typeof DashboardCatalogIndexRoute
   '/auth/consumer/login/': typeof AuthConsumerLoginIndexRoute
   '/auth/consumer/signup/': typeof AuthConsumerSignupIndexRoute
   '/auth/supplier/login/': typeof AuthSupplierLoginIndexRoute
@@ -76,7 +102,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/dashboard'
     | '/auth'
+    | '/dashboard/'
+    | '/dashboard/catalog'
     | '/auth/consumer/login'
     | '/auth/consumer/signup'
     | '/auth/supplier/login'
@@ -85,6 +114,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/dashboard'
+    | '/dashboard/catalog'
     | '/auth/consumer/login'
     | '/auth/consumer/signup'
     | '/auth/supplier/login'
@@ -92,7 +123,10 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/dashboard'
     | '/auth/'
+    | '/dashboard/'
+    | '/dashboard/catalog/'
     | '/auth/consumer/login/'
     | '/auth/consumer/signup/'
     | '/auth/supplier/login/'
@@ -101,6 +135,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
   AuthIndexRoute: typeof AuthIndexRoute
   AuthConsumerLoginIndexRoute: typeof AuthConsumerLoginIndexRoute
   AuthConsumerSignupIndexRoute: typeof AuthConsumerSignupIndexRoute
@@ -110,6 +145,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -117,12 +159,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     '/auth/': {
       id: '/auth/'
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/catalog/': {
+      id: '/dashboard/catalog/'
+      path: '/catalog'
+      fullPath: '/dashboard/catalog'
+      preLoaderRoute: typeof DashboardCatalogIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
     }
     '/auth/supplier/signup/': {
       id: '/auth/supplier/signup/'
@@ -155,8 +211,23 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DashboardRouteRouteChildren {
+  DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardCatalogIndexRoute: typeof DashboardCatalogIndexRoute
+}
+
+const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardIndexRoute: DashboardIndexRoute,
+  DashboardCatalogIndexRoute: DashboardCatalogIndexRoute,
+}
+
+const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
+  DashboardRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRouteRoute: DashboardRouteRouteWithChildren,
   AuthIndexRoute: AuthIndexRoute,
   AuthConsumerLoginIndexRoute: AuthConsumerLoginIndexRoute,
   AuthConsumerSignupIndexRoute: AuthConsumerSignupIndexRoute,
