@@ -1,14 +1,14 @@
 import uuid
 from decimal import Decimal
 from typing import Annotated, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
-from app.auth.auth import create_access_token, authenticate_user, Token, get_current_user, get_password_hash
+from app.auth.auth import create_access_token, authenticate_user, get_current_user, get_password_hash
 from app.core.db import get_db
 from app.models import User
 from app.models.user import Consumer, ConsumerStaff, Supplier, SupplierStaff, Subscription, StaffInvitation
@@ -123,7 +123,7 @@ def signup_supplier(data: SupplierSignup, db: Session = Depends(get_db)):
             supplier_id=supplier.id,
             tier=data.subscription_tier,
             start_date=datetime.now(),
-            end_date=datetime.now().replace(day=datetime.now().day + 14),  # 14 day trial
+            end_date=datetime.now() + timedelta(days=14),  # 14 day trial
             status="active",
             amount=Decimal(0),
         )
@@ -154,11 +154,11 @@ def signup_supplier(data: SupplierSignup, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Signup failed: {str(e)}")
 
 
-@router.post("/token")
+@router.post("/token", response_model=SignupResponse)
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
         db: Session = Depends(get_db),
-) -> Token:
+) -> SignupResponse:
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -166,7 +166,42 @@ async def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return create_access_token(data={"sub": str(user.id)})
+
+    # Determine user type and role
+    user_type = None
+    role = None
+
+    # Check if user is a consumer staff
+    consumer_staff = db.query(ConsumerStaff).filter(ConsumerStaff.user_id == user.id).first()
+    if consumer_staff:
+        user_type = "consumer"
+        role = consumer_staff.role
+
+    # Check if user is a supplier staff
+    supplier_staff = db.query(SupplierStaff).filter(SupplierStaff.user_id == user.id).first()
+    if supplier_staff:
+        user_type = "supplier"
+        role = supplier_staff.role
+
+    if not user_type:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User is not associated with any business entity"
+        )
+
+    # Update last login time
+    user.last_login_at = datetime.now()
+    db.commit()
+
+    token = create_access_token(data={"sub": str(user.id)})
+
+    return SignupResponse(
+        access_token=token.access_token,
+        token_type=token.token_type,
+        user=UserRead.model_validate(user),
+        user_type=user_type,
+        role=role
+    )
 
 
 
@@ -250,5 +285,3 @@ def accept_invitation(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Failed to accept invitation: {str(e)}")
-
-
