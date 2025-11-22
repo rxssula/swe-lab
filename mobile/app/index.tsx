@@ -1,63 +1,64 @@
 import { useState } from "react";
-import { Text, View, TextInput, Pressable } from "react-native";
-import { Link, useRouter } from "expo-router";
+import { KeyboardAvoidingView, Platform } from "react-native";
+import { Text, View, TextInput, Pressable, ActivityIndicator, Alert } from "react-native";
+import { Link } from "expo-router";
+import { useAuth } from "./context/AuthContext"; // adjust path
 
 export default function Index() {
-    const [username, setUsername] = useState("");
-    const [passcode, setPasscode] = useState("");
-    const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [passcode, setPasscode] = useState("");
+  const { signIn, isLoading } = useAuth();   // <--- use AuthContext
 
-    const handleLogin = () => {
-        if (passcode === "1234") {
-            router.push("/(tabs)/dashboard");
-        } else if (passcode === "5678") {
-            router.push("/(tabs)/dashboard");
-        } else {
-            alert("Please enter a valid code number");
-        }
-    };
+  const onLogin = async () => {
+    if (!username || !passcode) {
+      Alert.alert("Error", "Please enter username and passcode");
+      return;
+    }
 
-    return (
-        <View className="flex-1 items-center bg-white px-6">
-            {/* Welcome message */}
-            <Text className="mt-16 text-7xl text-black font-bold text-center">
-                Welcome BRO
-            </Text>
+    try {
+      await signIn(username, passcode); // <--- call your AuthProvider login
+    } catch (error: any) {
+      Alert.alert("Login failed", error.message ?? "Unknown error");
+    }
+  };
 
-            {/* Input fields */}
-            <View className="flex-1 w-full justify-center items-center">
-                <TextInput
-                    value={username}
-                    onChangeText={setUsername}
-                    placeholder="Username"
-                    className="border border-gray-400 rounded-md px-4 py-2 w-full mb-4"
-                />
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}>
+      <View className="flex-1 items-center bg-white px-6">
+        <Text className="mt-16 text-7xl text-black font-bold text-center">Welcome BRO</Text>
 
-                <TextInput
-                    value={passcode}
-                    onChangeText={setPasscode}
-                    placeholder="Passcode"
-                    secureTextEntry
-                    className="border border-gray-400 rounded-md px-4 py-2 w-full mb-6"
-                />
+        <View className="flex-1 w-full justify-center items-center">
+          <TextInput
+            value={username}
+            onChangeText={setUsername}
+            placeholder="Username"
+            className="border border-gray-400 rounded-md px-4 py-2 w-full mb-4"
+          />
 
-                {/* Login button */}
-                <Pressable
-                    onPress={handleLogin}
-                    className="bg-blue-500 rounded-md py-3 w-full items-center mb-4"
-                >
-                    <Text className="text-white font-bold text-lg">Log in</Text>
-                </Pressable>
+          <TextInput
+            value={passcode}
+            onChangeText={setPasscode}
+            placeholder="Passcode"
+            secureTextEntry
+            className="border border-gray-400 rounded-md px-4 py-2 w-full mb-6"
+          />
 
-                {/* Sign in link */}
-                <Link href="/auth/signup" className="text-blue-500 text-lg">
-                    Sign up
-                </Link>
+          <Pressable
+            onPress={onLogin}
+            className="bg-blue-500 rounded-md py-3 w-full items-center mb-4"
+            disabled={isLoading}
+          >
+            {isLoading 
+              ? <ActivityIndicator color="#fff" />
+              : <Text className="text-white font-bold text-lg">Log in</Text>
+            }
+          </Pressable>
 
-                <Link href="/consumer/(tabs)/dashboard" className="text-blue-500 text-lg">
-                    Catalog page test
-                </Link>
-            </View>
+          <Link href="/auth/signup" className="text-blue-500 text-lg">Sign up</Link>
         </View>
-    );
+      </View>
+    </KeyboardAvoidingView>
+  );
 }
