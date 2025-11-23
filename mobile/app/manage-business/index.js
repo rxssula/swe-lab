@@ -11,7 +11,7 @@ export default function ManageBusiness() {
 
             <TouchableOpacity
                 style={styles.button}
-                onPress={() => router.push('/supplier/manage-business/add-worker')}
+                onPress={() => router.push('manage-business/add-worker')}
             >
                 <Ionicons name="people-outline" size={24} color="#fff" />
                 <Text style={styles.btnText}>Add / Manage Workers</Text>
@@ -19,7 +19,7 @@ export default function ManageBusiness() {
 
             <TouchableOpacity
                 style={styles.button}
-                onPress={() => router.push('/supplier/manage-business/company-info')}
+                onPress={() => router.push('manage-business/company-info')}
             >
                 <Ionicons name="business-outline" size={24} color="#fff" />
                 <Text style={styles.btnText}>Company Information</Text>
@@ -27,7 +27,7 @@ export default function ManageBusiness() {
 
             <TouchableOpacity
                 style={styles.button}
-                onPress={() => router.push('/supplier/manage-business/product_info')}
+                onPress={() => router.push('manage-business/product_info')}
             >
                 <Ionicons name="cube-outline" size={24} color="#fff" />
                 <Text style={styles.btnText}>Product management</Text>
