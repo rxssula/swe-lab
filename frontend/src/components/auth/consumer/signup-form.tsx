@@ -25,14 +25,14 @@ import { useConsumerSignup } from '@/lib/hooks/use-signup'
 const signupSchema = z
   .object({
     businessName: z.string().min(1, 'Business name is required'),
-    businessType: z.string().optional(),
-    address: z.string().optional(),
-    city: z.string().optional(),
-    country: z.string().optional(),
+    businessType: z.string().min(1, 'Business type is required'),
+    address: z.string().min(1, 'Address is required'),
+    city: z.string().min(1, 'City is required'),
+    country: z.string().min(1, 'Country is required'),
     email: z.email('Please enter a valid email address'),
     password: z.string().min(8, 'Password must be at least 8 characters long'),
-    confirmPassword: z.string(),
-    phoneNumber: z.string().optional(),
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
+    phoneNumber: z.string().min(1, 'Phone number is required'),
     name: z.string().min(1, 'Name is required'),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -66,13 +66,13 @@ export function ConsumerSignupForm({
   const onSubmit = (data: SignupFormValues) => {
     const apiData = {
       business_name: data.businessName,
-      business_type: data.businessType || undefined,
-      address: data.address || undefined,
-      city: data.city || undefined,
-      country: data.country || undefined,
+      business_type: data.businessType,
+      address: data.address,
+      city: data.city,
+      country: data.country,
       email: data.email,
       password: data.password,
-      phone_number: data.phoneNumber || undefined,
+      phone_number: data.phoneNumber,
       name: data.name,
     }
 
@@ -98,7 +98,12 @@ export function ConsumerSignupForm({
                   <FormItem className="md:col-span-2">
                     <FormLabel>Your Name</FormLabel>
                     <FormControl>
-                      <Input type="text" placeholder="John Doe" {...field} />
+                      <Input
+                        type="text"
+                        placeholder="John Doe"
+                        required
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -114,6 +119,7 @@ export function ConsumerSignupForm({
                       <Input
                         type="text"
                         placeholder="Your Restaurant Name"
+                        required
                         {...field}
                       />
                     </FormControl>
@@ -131,6 +137,7 @@ export function ConsumerSignupForm({
                       <Input
                         type="text"
                         placeholder="Restaurant, Hotel, etc."
+                        required
                         {...field}
                       />
                     </FormControl>
@@ -148,6 +155,7 @@ export function ConsumerSignupForm({
                       <Input
                         type="tel"
                         placeholder="+1 (555) 000-0000"
+                        required
                         {...field}
                       />
                     </FormControl>
@@ -165,6 +173,7 @@ export function ConsumerSignupForm({
                       <Input
                         type="email"
                         placeholder="m@example.com"
+                        required
                         {...field}
                       />
                     </FormControl>
@@ -183,7 +192,7 @@ export function ConsumerSignupForm({
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" {...field} />
+                      <Input type="password" required {...field} />
                     </FormControl>
                     <FormDescription>
                       Must be at least 8 characters long.
@@ -199,7 +208,7 @@ export function ConsumerSignupForm({
                   <FormItem>
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
-                      <Input type="password" {...field} />
+                      <Input type="password" required {...field} />
                     </FormControl>
                     <FormDescription>
                       Please confirm your password.
@@ -218,6 +227,7 @@ export function ConsumerSignupForm({
                       <Input
                         type="text"
                         placeholder="Street address"
+                        required
                         {...field}
                       />
                     </FormControl>
@@ -232,7 +242,12 @@ export function ConsumerSignupForm({
                   <FormItem>
                     <FormLabel>City</FormLabel>
                     <FormControl>
-                      <Input type="text" placeholder="City" {...field} />
+                      <Input
+                        type="text"
+                        placeholder="City"
+                        required
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -245,7 +260,12 @@ export function ConsumerSignupForm({
                   <FormItem>
                     <FormLabel>Country</FormLabel>
                     <FormControl>
-                      <Input type="text" placeholder="Country" {...field} />
+                      <Input
+                        type="text"
+                        placeholder="Country"
+                        required
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

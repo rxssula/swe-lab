@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite'
 import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import { nitro } from 'nitro/vite'
 
 import tanstackRouter from '@tanstack/router-plugin/vite'
 import { resolve } from 'node:path'
@@ -10,7 +9,6 @@ import { resolve } from 'node:path'
 export default defineConfig({
   plugins: [
     tanstackRouter({ autoCodeSplitting: true }),
-    nitro(),
     viteReact(),
     tailwindcss(),
   ],
