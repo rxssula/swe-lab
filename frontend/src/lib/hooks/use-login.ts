@@ -1,10 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import {
-  login,
-  type LoginRequest,
-  type SignupResponse,
-} from '../api/auth'
+import { login, type LoginRequest, type SignupResponse } from '../api/auth'
 
 export function useLogin() {
   const navigate = useNavigate()
@@ -17,18 +13,9 @@ export function useLogin() {
       localStorage.setItem('role', data.role)
 
       // Navigate based on user type
-      if (data.user_type === 'consumer') {
-        navigate({ to: '/consumer/dashboard' }).catch(() => {
-          navigate({ to: '/' })
-        })
-      } else if (data.user_type === 'supplier') {
-        navigate({ to: '/supplier/dashboard' }).catch(() => {
-          navigate({ to: '/' })
-        })
-      } else {
+      navigate({ to: '/dashboard/catalog' }).catch(() => {
         navigate({ to: '/' })
-      }
+      })
     },
   })
 }
-
