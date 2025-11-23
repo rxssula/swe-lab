@@ -48,7 +48,7 @@ export function LoginForm({
               <Field>
                 <Button type="submit">Login</Button>
                 <FieldDescription className="text-center">
-                  Don&apos;t have an account? <Link to="/signup">Sign up</Link>
+                  Don&apos;t have an account? <Link to="/auth">Sign up</Link>
                 </FieldDescription>
               </Field>
             </FieldGroup>

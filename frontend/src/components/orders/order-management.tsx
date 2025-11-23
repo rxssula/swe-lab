@@ -1,15 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  CheckCircle2,
-  Eye,
-  Package,
-  RotateCcw,
-  Search,
-  X,
-  XCircle,
-} from 'lucide-react'
-import type {Order, OrderStatus} from '@/lib/api/orders';
+import { CheckCircle2, Eye, Package, Search, X, XCircle } from 'lucide-react'
+import type { Order, OrderStatus } from '@/lib/api/orders'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -36,15 +28,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  
-  
   acceptOrder,
   cancelOrder,
   completeOrder,
   getConsumerOrderHistory,
   getIncomingOrders,
   getOrderDetails,
-  rejectOrder
+  rejectOrder,
 } from '@/lib/api/orders'
 import { formatCurrency } from '@/lib/utils'
 import { Textarea } from '@/components/ui/textarea'
@@ -85,12 +75,8 @@ export function OrderManagement({ userType }: OrderManagementProps) {
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.delivery_option
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      order.delivery_notes
-        ?.toLowerCase()
-        .includes(searchQuery.toLowerCase())
+      order.delivery_option.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.delivery_notes?.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesSearch
   })
 
@@ -389,7 +375,9 @@ export function OrderManagement({ userType }: OrderManagementProps) {
                 <div>
                   <Label className="text-muted-foreground">Status</Label>
                   <div>
-                    <Badge variant={getStatusBadgeVariant(selectedOrder.status)}>
+                    <Badge
+                      variant={getStatusBadgeVariant(selectedOrder.status)}
+                    >
                       {selectedOrder.status.charAt(0).toUpperCase() +
                         selectedOrder.status.slice(1)}
                     </Badge>
@@ -402,7 +390,9 @@ export function OrderManagement({ userType }: OrderManagementProps) {
                   </p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Delivery Option</Label>
+                  <Label className="text-muted-foreground">
+                    Delivery Option
+                  </Label>
                   <p className="font-medium">{selectedOrder.delivery_option}</p>
                 </div>
                 <div>
@@ -421,7 +411,9 @@ export function OrderManagement({ userType }: OrderManagementProps) {
                 )}
                 {selectedOrder.completed_at && (
                   <div>
-                    <Label className="text-muted-foreground">Completed At</Label>
+                    <Label className="text-muted-foreground">
+                      Completed At
+                    </Label>
                     <p className="font-medium">
                       {formatDate(selectedOrder.completed_at)}
                     </p>
@@ -439,8 +431,12 @@ export function OrderManagement({ userType }: OrderManagementProps) {
                 )}
                 {selectedOrder.delivery_notes && (
                   <div className="col-span-2">
-                    <Label className="text-muted-foreground">Delivery Notes</Label>
-                    <p className="font-medium">{selectedOrder.delivery_notes}</p>
+                    <Label className="text-muted-foreground">
+                      Delivery Notes
+                    </Label>
+                    <p className="font-medium">
+                      {selectedOrder.delivery_notes}
+                    </p>
                   </div>
                 )}
               </div>
@@ -462,7 +458,9 @@ export function OrderManagement({ userType }: OrderManagementProps) {
                     <TableBody>
                       {selectedOrder.items.map((item) => (
                         <TableRow key={item.id}>
-                          <TableCell>{item.product_id.slice(0, 8)}...</TableCell>
+                          <TableCell>
+                            {item.product_id.slice(0, 8)}...
+                          </TableCell>
                           <TableCell>{item.quantity}</TableCell>
                           <TableCell>
                             {formatCurrency(item.unit_price)}
@@ -524,7 +522,10 @@ export function OrderManagement({ userType }: OrderManagementProps) {
                       Cancel Order
                     </Button>
                   )}
-                <Button variant="outline" onClick={() => setIsDetailsOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsDetailsOpen(false)}
+                >
                   Close
                 </Button>
               </div>
@@ -578,4 +579,3 @@ export function OrderManagement({ userType }: OrderManagementProps) {
     </div>
   )
 }
-

@@ -4,7 +4,6 @@ import * as React from 'react'
 import {
   AlertCircle,
   Link as LinkIcon,
-  LogOut,
   MessageSquare,
   Package,
   Settings,

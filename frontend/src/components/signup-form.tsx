@@ -62,7 +62,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
               <Field>
                 <Button type="submit">Create Account</Button>
                 <FieldDescription className="px-6 text-center">
-                  Already have an account? <Link to="/login">Sign in</Link>
+                  Already have an account? <Link to="/auth">Sign in</Link>
                 </FieldDescription>
               </Field>
             </FieldGroup>

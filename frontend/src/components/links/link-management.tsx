@@ -1,15 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  Ban,
-  CheckCircle2,
-  Clock,
-  Search,
-  Store,
-  Trash2,
-  XCircle,
-} from 'lucide-react'
-import type {Link} from '@/lib/api/links';
+import { Ban, CheckCircle2, Search, Store, Trash2, XCircle } from 'lucide-react'
+import type { Link } from '@/lib/api/links'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -36,17 +28,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  
   acceptLinkRequest,
   getLinkRequests,
   rejectLinkRequest,
-  removeOrBlockLink
+  removeOrBlockLink,
 } from '@/lib/api/links'
 
 export function LinkManagement() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [selectedLink, setSelectedLink] = useState<Link | null>(null)
+  const [, setSelectedLink] = useState<Link | null>(null)
   const [isBlockDialogOpen, setIsBlockDialogOpen] = useState(false)
   const [linkToBlock, setLinkToBlock] = useState<Link | null>(null)
 
@@ -161,9 +152,7 @@ export function LinkManagement() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">
-          Consumer Links
-        </h2>
+        <h2 className="text-3xl font-bold tracking-tight">Consumer Links</h2>
         <p className="text-muted-foreground">
           Manage link requests from consumers. Accept or reject requests to
           control who can access your products.
@@ -246,9 +235,7 @@ export function LinkManagement() {
                   </TableCell>
                   <TableCell>{formatDate(link.requested_at)}</TableCell>
                   <TableCell>
-                    {link.responded_at
-                      ? formatDate(link.responded_at)
-                      : 'N/A'}
+                    {link.responded_at ? formatDate(link.responded_at) : 'N/A'}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
@@ -356,4 +343,3 @@ export function LinkManagement() {
     </div>
   )
 }
-

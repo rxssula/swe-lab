@@ -1,7 +1,15 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, Clock, Link as LinkIcon, Package, Search, Store, XCircle  } from 'lucide-react'
-import type {Link} from '@/lib/api/links';
+import {
+  CheckCircle2,
+  Clock,
+  Link as LinkIcon,
+  Package,
+  Search,
+  Store,
+  XCircle,
+} from 'lucide-react'
+import type { Link } from '@/lib/api/links'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -22,12 +30,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { getCategories } from '@/lib/api/categories'
 import { getSuppliersByCategory } from '@/lib/api/suppliers'
-import {
-  
-  checkLinkStatus,
-  getMyLinks,
-  requestLinkToSupplier
-} from '@/lib/api/links'
+import { getMyLinks, requestLinkToSupplier } from '@/lib/api/links'
 
 export function FindSuppliers() {
   const [selectedCategory, setSelectedCategory] = useState<string>('')
@@ -93,7 +96,7 @@ export function FindSuppliers() {
     )
   })
 
-  const getLinkStatusBadge = (supplier: typeof suppliers[0]) => {
+  const getLinkStatusBadge = (supplier: (typeof suppliers)[0]) => {
     const link = linkStatusMap.get(supplier.supplier_id)
     if (!link) {
       return null
@@ -133,7 +136,7 @@ export function FindSuppliers() {
     }
   }
 
-  const canRequestLink = (supplier: typeof suppliers[0]) => {
+  const canRequestLink = (supplier: (typeof suppliers)[0]) => {
     const link = linkStatusMap.get(supplier.supplier_id)
     if (!link) return true
     return link.status === 'declined' || link.status === 'removed'
@@ -294,4 +297,3 @@ export function FindSuppliers() {
     </div>
   )
 }
-
