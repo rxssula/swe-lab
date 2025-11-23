@@ -1,9 +1,13 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useAuth } from "../context/AuthContext";
+
 
 export default function ManageBusiness() {
     const router = useRouter();
+    const { user, token } = useAuth();
+    console.log(user);
 
     return (
         <View style={styles.container}>
@@ -24,14 +28,16 @@ export default function ManageBusiness() {
                 <Ionicons name="business-outline" size={24} color="#fff" />
                 <Text style={styles.btnText}>Company Information</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-                style={styles.button}
-                onPress={() => router.push('manage-business/product_info')}
-            >
-                <Ionicons name="cube-outline" size={24} color="#fff" />
-                <Text style={styles.btnText}>Product management</Text>
-            </TouchableOpacity>
+          
+            {user.userType === 'supplier' ? (
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => router.push('manage-business/product_info')}
+                >
+                    <Ionicons name="cube-outline" size={24} color="#fff" />
+                    <Text style={styles.btnText}>Product management</Text>
+                </TouchableOpacity>
+            ) : null}
         </View>
     );
 }

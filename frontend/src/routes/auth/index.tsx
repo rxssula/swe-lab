@@ -1,3 +1,4 @@
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -6,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { createFileRoute, Link } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/auth/')({
   component: AuthIndex,

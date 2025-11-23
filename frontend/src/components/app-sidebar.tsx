@@ -2,13 +2,12 @@
 
 import * as React from 'react'
 import {
-  Package,
-  ShoppingCart,
   AlertCircle,
   Link as LinkIcon,
   MessageSquare,
+  Package,
   Settings,
-  LogOut,
+  ShoppingCart,
 } from 'lucide-react'
 import { Link, useMatchRoute } from '@tanstack/react-router'
 
@@ -17,13 +16,13 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarHeader,
-  SidebarRail,
   SidebarGroup,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
 } from '@/components/ui/sidebar'
 
 type UserType = 'supplier' | 'consumer'
@@ -119,12 +118,6 @@ const consumerNavItems = [
     url: '/dashboard/settings',
     icon: Settings,
     description: 'Update personal information and account preferences.',
-  },
-  {
-    title: 'Logout',
-    url: '/logout',
-    icon: LogOut,
-    description: 'Log out of the consumer account.',
   },
 ]
 

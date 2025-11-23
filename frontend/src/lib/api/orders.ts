@@ -30,7 +30,7 @@ export interface Order {
   accepted_at?: string
   completed_at?: string
   cancelled_at?: string
-  items: OrderItem[]
+  items: Array<OrderItem>
 }
 
 interface ApiError {
@@ -57,7 +57,7 @@ function getAuthHeaders() {
 export async function getIncomingOrders(
   status?: OrderStatus,
   consumerId?: string,
-): Promise<Order[]> {
+): Promise<Array<Order>> {
   const params = new URLSearchParams()
   if (status) params.append('status', status)
   if (consumerId) params.append('consumer_id', consumerId)
@@ -151,7 +151,7 @@ export async function completeOrder(orderId: string): Promise<Order> {
 export async function getConsumerOrderHistory(
   status?: OrderStatus,
   supplierId?: string,
-): Promise<Order[]> {
+): Promise<Array<Order>> {
   const params = new URLSearchParams()
   if (status) params.append('status', status)
   if (supplierId) params.append('supplier_id', supplierId)
@@ -252,7 +252,7 @@ export interface OrderItemCreate {
 
 export interface OrderCreate {
   supplier_id: string
-  items: OrderItemCreate[]
+  items: Array<OrderItemCreate>
   delivery_notes?: string
   delivery_option: string
 }

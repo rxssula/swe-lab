@@ -1,4 +1,4 @@
-import { getApiUrl, defaultHeaders } from './config'
+import { defaultHeaders, getApiUrl } from './config'
 
 export interface Link {
   id: string
@@ -50,7 +50,7 @@ export async function requestLinkToSupplier(
   return response.json()
 }
 
-export async function getMyLinks(statusFilter?: string): Promise<Link[]> {
+export async function getMyLinks(statusFilter?: string): Promise<Array<Link>> {
   const params = new URLSearchParams()
   if (statusFilter) params.append('status_filter', statusFilter)
 
@@ -100,7 +100,7 @@ export async function checkLinkStatus(supplierId: string): Promise<{
 }
 
 // Supplier endpoints
-export async function getLinkRequests(statusFilter?: string): Promise<Link[]> {
+export async function getLinkRequests(statusFilter?: string): Promise<Array<Link>> {
   const params = new URLSearchParams()
   if (statusFilter) params.append('status_filter', statusFilter)
 

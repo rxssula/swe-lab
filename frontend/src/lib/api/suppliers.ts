@@ -1,4 +1,4 @@
-import { getApiUrl, defaultHeaders } from './config'
+import { defaultHeaders, getApiUrl } from './config'
 
 export interface SupplierByCategory {
   supplier_id: string
@@ -27,7 +27,7 @@ function getAuthHeaders() {
 export async function getSuppliersByCategory(
   categoryId: string,
   linkedOnly: boolean = false,
-): Promise<SupplierByCategory[]> {
+): Promise<Array<SupplierByCategory>> {
   const params = new URLSearchParams()
   if (linkedOnly) params.append('linked_only', 'true')
 

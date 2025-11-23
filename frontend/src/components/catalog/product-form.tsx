@@ -2,6 +2,8 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useMutation } from '@tanstack/react-query'
+import type {Category} from '@/lib/api/categories';
+import type {Product} from '@/lib/api/products';
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -20,8 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { createProduct, updateProduct, type Product } from '@/lib/api/products'
-import { type Category } from '@/lib/api/categories'
+import {  createProduct, updateProduct } from '@/lib/api/products'
 
 const productSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
@@ -53,7 +54,7 @@ type ProductFormValues = z.infer<typeof productSchema>
 
 interface ProductFormProps {
   product?: Product | null
-  categories: Category[]
+  categories: Array<Category>
   onSuccess: () => void
 }
 
@@ -91,7 +92,7 @@ export function ProductForm({
     },
   })
 
-  const onSubmit = async (data: ProductFormValues) => {
+  const onSubmit = (data: ProductFormValues) => {
     const apiData = {
       name: data.name,
       description: data.description || null,

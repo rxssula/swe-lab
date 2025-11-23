@@ -12,13 +12,13 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
-import { useAuth } from "../context/AuthContext"; // adjust path if needed
+import { useAuth } from "../context/AuthContext";
 
 export default function CompanyInfo() {
-  const { token, signOut } = useAuth(); // expects your AuthProvider to expose token
-  // Replace these with your real endpoints:
-  const PROFILE_URL = "https://swe-lab-1.onrender.com/auth/me"; // GET existing company info
-  const SAVE_URL = "https://swe-lab-1.onrender.com/supplier/company/"; // PATCH/PUT to save changes
+  const { token, signOut } = useAuth(); 
+
+  const PROFILE_URL = "https://swe-lab-1.onrender.com/auth/me";
+  const SAVE_URL = "https://swe-lab-1.onrender.com/supplier/company/";
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -36,7 +36,6 @@ export default function CompanyInfo() {
     setAddress(p.address ?? "");
   };
 
-  
   useEffect(() => {
     let mounted = true;
     const load = async () => {
@@ -59,14 +58,17 @@ export default function CompanyInfo() {
         } catch {
           data = null;
         }
+        console.log("Data:", data)
 
         if (!mounted) return;
 
+        let assoc = data.consumer_associations[0] ? data.consumer_associations[0].consumer : data.supplier_associations[0].supplier;
+
         if (resp.ok && data) {
-          fillFromProfile(data);
+          console.log("Data:", assoc)
+          fillFromProfile(assoc);
         } else {
           console.warn("Failed to load company profile", resp.status, data);
-          // optionally alert user
         }
       } catch (err) {
         console.error("Error loading company profile", err);

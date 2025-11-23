@@ -1,4 +1,4 @@
-import { getApiUrl, defaultHeaders } from './config'
+import { defaultHeaders, getApiUrl } from './config'
 
 export interface Product {
   id: string
@@ -13,7 +13,7 @@ export interface Product {
   is_active: boolean
   supplier_name?: string | null
   category_name?: string | null
-  images?: ProductImage[]
+  images?: Array<ProductImage>
 }
 
 export interface ProductImage {
@@ -60,7 +60,7 @@ function getAuthHeaders() {
 export async function getMyProducts(
   activeOnly?: boolean,
   categoryId?: string,
-): Promise<Product[]> {
+): Promise<Array<Product>> {
   const params = new URLSearchParams()
   if (activeOnly) params.append('active_only', 'true')
   if (categoryId) params.append('category_id', categoryId)
@@ -174,7 +174,7 @@ export interface CatalogItem {
   supplier_id: string
   supplier_name: string
   category_name: string | null
-  images: ProductImage[]
+  images: Array<ProductImage>
 }
 
 export interface LinkedSupplier {
@@ -194,7 +194,7 @@ export async function browseCatalog(params?: {
   min_price?: number
   max_price?: number
   active_only?: boolean
-}): Promise<CatalogItem[]> {
+}): Promise<Array<CatalogItem>> {
   const queryParams = new URLSearchParams()
   if (params?.supplier_id) queryParams.append('supplier_id', params.supplier_id)
   if (params?.category_id) queryParams.append('category_id', params.category_id)
@@ -228,7 +228,7 @@ export async function browseCatalog(params?: {
   return response.json()
 }
 
-export async function getLinkedSuppliers(): Promise<LinkedSupplier[]> {
+export async function getLinkedSuppliers(): Promise<Array<LinkedSupplier>> {
   const response = await fetch(getApiUrl('products/catalog/suppliers'), {
     method: 'GET',
     headers: getAuthHeaders(),

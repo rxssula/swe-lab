@@ -1,14 +1,16 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  Minus,
+  Package,
+  Plus,
   Search,
   ShoppingCart,
-  Plus,
-  Minus,
-  X,
-  Package,
   Store,
+  X,
 } from 'lucide-react'
+import type {CatalogItem} from '@/lib/api/products';
+import type {OrderItemCreate} from '@/lib/api/orders';
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -46,12 +48,12 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import {
+  
   browseCatalog,
-  getLinkedSuppliers,
-  type CatalogItem,
+  getLinkedSuppliers
 } from '@/lib/api/products'
 import { getCategories } from '@/lib/api/categories'
-import { createOrder, type OrderItemCreate } from '@/lib/api/orders'
+import {  createOrder } from '@/lib/api/orders'
 import { formatCurrency } from '@/lib/utils'
 
 interface CartItem {
@@ -60,7 +62,7 @@ interface CartItem {
 }
 
 interface Cart {
-  [supplierId: string]: CartItem[]
+  [supplierId: string]: Array<CartItem>
 }
 
 export function ConsumerCatalog() {
@@ -109,18 +111,18 @@ export function ConsumerCatalog() {
   // Group products by supplier
   const productsBySupplier = products.reduce(
     (acc, product) => {
-      if (!acc[product.supplier_id]) {
+      if (!(product.supplier_id in acc)) {
         acc[product.supplier_id] = []
       }
       acc[product.supplier_id].push(product)
       return acc
     },
-    {} as Record<string, CatalogItem[]>,
+    {} as Record<string, Array<CatalogItem>>,
   )
 
   // Calculate cart totals
   const getCartTotal = (supplierId: string) => {
-    const items = cart[supplierId] || []
+    const items = supplierId in cart ? cart[supplierId] : []
     return items.reduce(
       (total, item) => total + item.product.price_per_unit * item.quantity,
       0,
@@ -138,7 +140,7 @@ export function ConsumerCatalog() {
   // Cart operations
   const addToCart = (product: CatalogItem) => {
     setCart((prev) => {
-      const supplierCart = prev[product.supplier_id] || []
+      const supplierCart = product.supplier_id in prev ? prev[product.supplier_id] : []
       const existingItem = supplierCart.find(
         (item) => item.product.id === product.id,
       )
@@ -184,7 +186,7 @@ export function ConsumerCatalog() {
     delta: number,
   ) => {
     setCart((prev) => {
-      const supplierCart = prev[supplierId] || []
+      const supplierCart = supplierId in prev ? prev[supplierId] : []
       const item = supplierCart.find((i) => i.product.id === productId)
       if (!item) return prev
 
@@ -218,7 +220,7 @@ export function ConsumerCatalog() {
 
   const removeFromCart = (supplierId: string, productId: string) => {
     setCart((prev) => {
-      const supplierCart = prev[supplierId] || []
+      const supplierCart = supplierId in prev ? prev[supplierId] : []
       return {
         ...prev,
         [supplierId]: supplierCart.filter((i) => i.product.id !== productId),
@@ -253,7 +255,7 @@ export function ConsumerCatalog() {
   })
 
   const handleCheckout = (supplierId: string) => {
-    const items = cart[supplierId] || []
+    const items = supplierId in cart ? cart[supplierId] : []
     if (items.length === 0) {
       alert('Cart is empty')
       return
@@ -273,8 +275,8 @@ export function ConsumerCatalog() {
       return
     }
 
-    const items = cart[selectedSupplierId] || []
-    const orderItems: OrderItemCreate[] = items.map((item) => ({
+    const items = selectedSupplierId in cart ? cart[selectedSupplierId] : []
+    const orderItems: Array<OrderItemCreate> = items.map((item) => ({
       product_id: item.product.id,
       quantity: item.quantity,
     }))
@@ -501,28 +503,29 @@ export function ConsumerCatalog() {
         </div>
       ) : (
         <div className="space-y-8">
-          {Object.entries(productsBySupplier).map(([supplierId, products]) => {
+          {Object.entries(productsBySupplier).map(([supplierId, supplierProducts]) => {
             const supplier = suppliers.find((s) => s.supplier_id === supplierId)
             return (
               <div key={supplierId} className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Store className="h-5 w-5" />
                   <h3 className="text-xl font-semibold">
-                    {supplier?.supplier_name || 'Unknown Supplier'}
+                    {supplier && supplier.supplier_name ? supplier.supplier_name : 'Unknown Supplier'}
                   </h3>
                   <Badge variant="secondary">
-                    {products.length} product{products.length !== 1 ? 's' : ''}
+                    {supplierProducts.length} product{supplierProducts.length !== 1 ? 's' : ''}
                   </Badge>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {products.map((product) => {
-                    const cartItem = cart[supplierId]?.find(
+                  {supplierProducts.map((product) => {
+                    const supplierCart = supplierId in cart ? cart[supplierId] : []
+                    const cartItem = supplierCart.find(
                       (item) => item.product.id === product.id,
                     )
                     const inCart = !!cartItem
-                    const primaryImage =
-                      product.images?.find((img) => img.is_primary) ||
-                      product.images?.[0]
+                    const primaryImage = product.images.length > 0
+                      ? product.images.find((img) => img.is_primary) || product.images[0]
+                      : undefined
 
                     return (
                       <Card key={product.id} className="flex flex-col">
@@ -671,21 +674,23 @@ export function ConsumerCatalog() {
               <Separator />
               <div className="space-y-2">
                 <h4 className="font-semibold">Order Summary</h4>
-                {cart[selectedSupplierId]?.map((item) => (
-                  <div
-                    key={item.product.id}
-                    className="flex justify-between text-sm"
-                  >
-                    <span>
-                      {item.product.name} x {item.quantity}
-                    </span>
-                    <span>
-                      {formatCurrency(
-                        item.product.price_per_unit * item.quantity,
-                      )}
-                    </span>
-                  </div>
-                ))}
+                {selectedSupplierId && selectedSupplierId in cart
+                  ? cart[selectedSupplierId].map((item) => (
+                      <div
+                        key={item.product.id}
+                        className="flex justify-between text-sm"
+                      >
+                        <span>
+                          {item.product.name} x {item.quantity}
+                        </span>
+                        <span>
+                          {formatCurrency(
+                            item.product.price_per_unit * item.quantity,
+                          )}
+                        </span>
+                      </div>
+                    ))
+                  : null}
                 <Separator />
                 <div className="flex justify-between font-bold">
                   <span>Total</span>

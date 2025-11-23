@@ -14,8 +14,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as DashboardSuppliersIndexRouteImport } from './routes/dashboard/suppliers/index'
+import { Route as DashboardSettingsIndexRouteImport } from './routes/dashboard/settings/index'
 import { Route as DashboardOrdersIndexRouteImport } from './routes/dashboard/orders/index'
 import { Route as DashboardLinksIndexRouteImport } from './routes/dashboard/links/index'
+import { Route as DashboardComplaintsIndexRouteImport } from './routes/dashboard/complaints/index'
 import { Route as DashboardChatIndexRouteImport } from './routes/dashboard/chat/index'
 import { Route as DashboardCatalogIndexRouteImport } from './routes/dashboard/catalog/index'
 import { Route as AuthSupplierSignupIndexRouteImport } from './routes/auth/supplier/signup/index'
@@ -48,6 +50,11 @@ const DashboardSuppliersIndexRoute = DashboardSuppliersIndexRouteImport.update({
   path: '/suppliers/',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
+const DashboardSettingsIndexRoute = DashboardSettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
 const DashboardOrdersIndexRoute = DashboardOrdersIndexRouteImport.update({
   id: '/orders/',
   path: '/orders/',
@@ -58,6 +65,12 @@ const DashboardLinksIndexRoute = DashboardLinksIndexRouteImport.update({
   path: '/links/',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
+const DashboardComplaintsIndexRoute =
+  DashboardComplaintsIndexRouteImport.update({
+    id: '/complaints/',
+    path: '/complaints/',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
 const DashboardChatIndexRoute = DashboardChatIndexRouteImport.update({
   id: '/chat/',
   path: '/chat/',
@@ -96,8 +109,10 @@ export interface FileRoutesByFullPath {
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/catalog': typeof DashboardCatalogIndexRoute
   '/dashboard/chat': typeof DashboardChatIndexRoute
+  '/dashboard/complaints': typeof DashboardComplaintsIndexRoute
   '/dashboard/links': typeof DashboardLinksIndexRoute
   '/dashboard/orders': typeof DashboardOrdersIndexRoute
+  '/dashboard/settings': typeof DashboardSettingsIndexRoute
   '/dashboard/suppliers': typeof DashboardSuppliersIndexRoute
   '/auth/consumer/login': typeof AuthConsumerLoginIndexRoute
   '/auth/consumer/signup': typeof AuthConsumerSignupIndexRoute
@@ -110,8 +125,10 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/catalog': typeof DashboardCatalogIndexRoute
   '/dashboard/chat': typeof DashboardChatIndexRoute
+  '/dashboard/complaints': typeof DashboardComplaintsIndexRoute
   '/dashboard/links': typeof DashboardLinksIndexRoute
   '/dashboard/orders': typeof DashboardOrdersIndexRoute
+  '/dashboard/settings': typeof DashboardSettingsIndexRoute
   '/dashboard/suppliers': typeof DashboardSuppliersIndexRoute
   '/auth/consumer/login': typeof AuthConsumerLoginIndexRoute
   '/auth/consumer/signup': typeof AuthConsumerSignupIndexRoute
@@ -126,8 +143,10 @@ export interface FileRoutesById {
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/catalog/': typeof DashboardCatalogIndexRoute
   '/dashboard/chat/': typeof DashboardChatIndexRoute
+  '/dashboard/complaints/': typeof DashboardComplaintsIndexRoute
   '/dashboard/links/': typeof DashboardLinksIndexRoute
   '/dashboard/orders/': typeof DashboardOrdersIndexRoute
+  '/dashboard/settings/': typeof DashboardSettingsIndexRoute
   '/dashboard/suppliers/': typeof DashboardSuppliersIndexRoute
   '/auth/consumer/login/': typeof AuthConsumerLoginIndexRoute
   '/auth/consumer/signup/': typeof AuthConsumerSignupIndexRoute
@@ -143,8 +162,10 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/dashboard/catalog'
     | '/dashboard/chat'
+    | '/dashboard/complaints'
     | '/dashboard/links'
     | '/dashboard/orders'
+    | '/dashboard/settings'
     | '/dashboard/suppliers'
     | '/auth/consumer/login'
     | '/auth/consumer/signup'
@@ -157,8 +178,10 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dashboard/catalog'
     | '/dashboard/chat'
+    | '/dashboard/complaints'
     | '/dashboard/links'
     | '/dashboard/orders'
+    | '/dashboard/settings'
     | '/dashboard/suppliers'
     | '/auth/consumer/login'
     | '/auth/consumer/signup'
@@ -172,8 +195,10 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/dashboard/catalog/'
     | '/dashboard/chat/'
+    | '/dashboard/complaints/'
     | '/dashboard/links/'
     | '/dashboard/orders/'
+    | '/dashboard/settings/'
     | '/dashboard/suppliers/'
     | '/auth/consumer/login/'
     | '/auth/consumer/signup/'
@@ -228,6 +253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSuppliersIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/dashboard/settings/': {
+      id: '/dashboard/settings/'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     '/dashboard/orders/': {
       id: '/dashboard/orders/'
       path: '/orders'
@@ -240,6 +272,13 @@ declare module '@tanstack/react-router' {
       path: '/links'
       fullPath: '/dashboard/links'
       preLoaderRoute: typeof DashboardLinksIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/complaints/': {
+      id: '/dashboard/complaints/'
+      path: '/complaints'
+      fullPath: '/dashboard/complaints'
+      preLoaderRoute: typeof DashboardComplaintsIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
     '/dashboard/chat/': {
@@ -291,8 +330,10 @@ interface DashboardRouteRouteChildren {
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardCatalogIndexRoute: typeof DashboardCatalogIndexRoute
   DashboardChatIndexRoute: typeof DashboardChatIndexRoute
+  DashboardComplaintsIndexRoute: typeof DashboardComplaintsIndexRoute
   DashboardLinksIndexRoute: typeof DashboardLinksIndexRoute
   DashboardOrdersIndexRoute: typeof DashboardOrdersIndexRoute
+  DashboardSettingsIndexRoute: typeof DashboardSettingsIndexRoute
   DashboardSuppliersIndexRoute: typeof DashboardSuppliersIndexRoute
 }
 
@@ -300,8 +341,10 @@ const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardCatalogIndexRoute: DashboardCatalogIndexRoute,
   DashboardChatIndexRoute: DashboardChatIndexRoute,
+  DashboardComplaintsIndexRoute: DashboardComplaintsIndexRoute,
   DashboardLinksIndexRoute: DashboardLinksIndexRoute,
   DashboardOrdersIndexRoute: DashboardOrdersIndexRoute,
+  DashboardSettingsIndexRoute: DashboardSettingsIndexRoute,
   DashboardSuppliersIndexRoute: DashboardSuppliersIndexRoute,
 }
 

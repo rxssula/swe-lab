@@ -6,6 +6,6 @@ export const Route = createFileRoute('/dashboard/orders/')({
 })
 
 function OrdersPage() {
-  const userType = localStorage.getItem('user_type') as 'supplier' | 'consumer'
-  return <OrderManagement userType={userType || 'consumer'} />
+  const userType = localStorage.getItem('user_type') as 'supplier' | 'consumer' | null
+  return <OrderManagement userType={userType ?? 'consumer'} />
 }

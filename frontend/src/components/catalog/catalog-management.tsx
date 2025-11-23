@@ -1,6 +1,9 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Plus, Edit, Trash2, Package } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Edit, Package, Plus, Search, Trash2 } from 'lucide-react'
+import { ProductForm } from './product-form'
+import { CategoryForm } from './category-form'
+import type { Product } from '@/lib/api/products'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -29,9 +32,6 @@ import {
 } from '@/components/ui/dialog'
 import { getMyProducts } from '@/lib/api/products'
 import { getCategories } from '@/lib/api/categories'
-import { ProductForm } from './product-form'
-import { CategoryForm } from './category-form'
-import type { Product } from '@/lib/api/products'
 import { formatCurrency } from '@/lib/utils'
 
 export function CatalogManagement() {
@@ -43,6 +43,10 @@ export function CatalogManagement() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
   const queryClient = useQueryClient()
+
+  // Get user role from localStorage
+  const userRole = localStorage.getItem('role')
+  const canManageCatalog = userRole === 'OWNER' || userRole === 'MANAGER'
 
   // Fetch products
   const {
@@ -115,57 +119,59 @@ export function CatalogManagement() {
             Manage your products, availability, and minimum order quantities
           </p>
         </div>
-        <div className="flex gap-2">
-          <Dialog
-            open={isCategoryDialogOpen}
-            onOpenChange={setIsCategoryDialogOpen}
-          >
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Package className="mr-2 h-4 w-4" />
-                Add Category
+        {canManageCatalog && (
+          <div className="flex gap-2">
+            <Dialog
+              open={isCategoryDialogOpen}
+              onOpenChange={setIsCategoryDialogOpen}
+            >
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Package className="mr-2 h-4 w-4" />
+                  Add Category
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Category</DialogTitle>
+                  <DialogDescription>
+                    Create a new product category to organize your catalog
+                  </DialogDescription>
+                </DialogHeader>
+                <CategoryForm
+                  categories={categories}
+                  onSuccess={handleCategoryDialogClose}
+                />
+              </DialogContent>
+            </Dialog>
+            <Dialog
+              open={isProductDialogOpen}
+              onOpenChange={setIsProductDialogOpen}
+            >
+              <Button onClick={handleAddProduct}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Product
               </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add Category</DialogTitle>
-                <DialogDescription>
-                  Create a new product category to organize your catalog
-                </DialogDescription>
-              </DialogHeader>
-              <CategoryForm
-                categories={categories}
-                onSuccess={handleCategoryDialogClose}
-              />
-            </DialogContent>
-          </Dialog>
-          <Dialog
-            open={isProductDialogOpen}
-            onOpenChange={setIsProductDialogOpen}
-          >
-            <Button onClick={handleAddProduct}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Product
-            </Button>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingProduct ? 'Edit Product' : 'Add Product'}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingProduct
-                    ? 'Update product details and availability'
-                    : 'Add a new product to your catalog'}
-                </DialogDescription>
-              </DialogHeader>
-              <ProductForm
-                product={editingProduct}
-                categories={categories}
-                onSuccess={handleProductDialogClose}
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingProduct ? 'Edit Product' : 'Add Product'}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {editingProduct
+                      ? 'Update product details and availability'
+                      : 'Add a new product to your catalog'}
+                  </DialogDescription>
+                </DialogHeader>
+                <ProductForm
+                  product={editingProduct}
+                  categories={categories}
+                  onSuccess={handleProductDialogClose}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -264,16 +270,18 @@ export function CatalogManagement() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditProduct(product)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <ProductDeleteButton productId={product.id} />
-                    </div>
+                    {canManageCatalog && (
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditProduct(product)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <ProductDeleteButton productId={product.id} />
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
