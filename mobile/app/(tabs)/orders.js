@@ -26,12 +26,22 @@ function formatDate(iso) {
     return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+// helper to capitalize status from API (pending -> Pending)
+function capitalizeStatus(status) {
+    if (!status) return 'Pending';
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+}
+
 const STATUS_COLOR = {
     Pending: '#ffb74d',
+    Accepted: '#64b5f6',
     Processing: '#64b5f6',
     Shipped: '#4db6ac',
     Delivered: '#81c784',
     Canceled: '#e57373',
+    Cancelled: '#e57373', // API might return "cancelled"
+    Completed: '#81c784',
+    Rejected: '#e57373',
 };
 
 export default function Orders() {
@@ -39,8 +49,8 @@ export default function Orders() {
 
     // get auth data
     const auth = useAuth();
-    const userRole = auth?.user?.role ?? "consumer"; // default consumer
-    const isSupplier = userRole === "supplier";
+    const userType = auth?.user?.userType?.toLowerCase() ?? "consumer";
+    const isSupplier = userType === "supplier";
 
     // Try reading token from AuthProvider, fallback to AsyncStorage
     let tokenFromContext = null;
@@ -56,11 +66,10 @@ export default function Orders() {
         return await AsyncStorage.getItem(TOKEN_KEY);
     };
 
-    // consumer endpoint by default
-    // suppliers will override this (we assume backend has /supplier/orders)
+    // Use the correct endpoints
     const ORDERS_URL = isSupplier
-        ? 'https://swe-lab-1.onrender.com/supplier/orders/'
-        : 'https://swe-lab-1.onrender.com/consumer/orders/';
+        ? 'https://swe-lab-1.onrender.com/orders/supplier/incoming'
+        : 'https://swe-lab-1.onrender.com/orders/consumer/history';
 
     const [query, setQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('All');
@@ -73,6 +82,7 @@ export default function Orders() {
 
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
+    const [processingOrderId, setProcessingOrderId] = useState(null);
 
     const PAGE_SIZE = 12;
 
@@ -83,21 +93,65 @@ export default function Orders() {
                 const headers = { Accept: 'application/json' };
                 if (token) headers.Authorization = `Bearer ${token}`;
 
-                const url = `${ORDERS_URL}?page=${page}&page_size=${PAGE_SIZE}`;
+                const url = `${ORDERS_URL}`;
+                console.log('Fetching orders from:', url);
                 const resp = await fetch(url, { headers });
+                console.log('Response status:', resp.status);
                 const text = await resp.text();
+                console.log('Response text:', text.substring(0, 200));
                 let data = null;
-                try { data = text ? JSON.parse(text) : null; } catch (e) { data = null; }
+                try { data = text ? JSON.parse(text) : null; } catch (e) {
+                    console.error('JSON parse error:', e);
+                    data = null;
+                }
 
                 if (!resp.ok) {
                     console.warn('orders fetch failed', resp.status, data ?? text);
                     throw new Error(data?.detail ?? data?.message ?? `Failed to fetch orders (status ${resp.status})`);
                 }
 
+                // Map API response to UI format
+                let orders = [];
                 if (Array.isArray(data)) {
-                    return { items: data, hasMore: data.length === PAGE_SIZE };
+                    orders = data.map(order => ({
+                        id: order.id,
+                        number: order.id, // API doesn't provide order number, use id
+                        date: order.created_at,
+                        total: parseFloat(order.total_amount || 0).toFixed(2),
+                        status: capitalizeStatus(order.status),
+                        items: Array.isArray(order.items) ? order.items.map(item => ({
+                            id: item.id || item.product_id,
+                            title: item.product_name || item.name || 'Product',
+                            qty: item.quantity || 1,
+                            price: parseFloat(item.price_per_unit || item.price || 0).toFixed(2),
+                        })) : [],
+                        shippingAddress: order.delivery_notes || '—',
+                        delivery_option: order.delivery_option,
+                        supplier_id: order.supplier_id,
+                        consumer_id: order.consumer_id,
+                        rejection_reason: order.rejection_reason,
+                    }));
+                    return { items: orders, hasMore: data.length === PAGE_SIZE };
                 } else if (data && Array.isArray(data.results)) {
-                    return { items: data.results, hasMore: !!data.next };
+                    orders = data.results.map(order => ({
+                        id: order.id,
+                        number: order.id,
+                        date: order.created_at,
+                        total: parseFloat(order.total_amount || 0).toFixed(2),
+                        status: capitalizeStatus(order.status),
+                        items: Array.isArray(order.items) ? order.items.map(item => ({
+                            id: item.id || item.product_id,
+                            title: item.product_name || item.name || 'Product',
+                            qty: item.quantity || 1,
+                            price: parseFloat(item.price_per_unit || item.price || 0).toFixed(2),
+                        })) : [],
+                        shippingAddress: order.delivery_notes || '—',
+                        delivery_option: order.delivery_option,
+                        supplier_id: order.supplier_id,
+                        consumer_id: order.consumer_id,
+                        rejection_reason: order.rejection_reason,
+                    }));
+                    return { items: orders, hasMore: !!data.next };
                 } else {
                     return { items: [], hasMore: false };
                 }
@@ -161,6 +215,118 @@ export default function Orders() {
         }
     }, [fetchOrdersApi, page, isLoadingMore]);
 
+    // Supplier actions: accept, reject, complete
+    const handleAcceptOrder = async (orderId) => {
+        if (!tokenFromContext || !orderId) return;
+        setProcessingOrderId(orderId);
+        try {
+            const resp = await fetch(`https://swe-lab-1.onrender.com/orders/${orderId}/accept`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${tokenFromContext}`,
+                    Accept: 'application/json',
+                },
+            });
+
+            if (resp.ok) {
+                Alert.alert('Success', 'Order accepted!');
+                await onRefresh();
+            } else {
+                const text = await resp.text().catch(() => null);
+                console.warn('Accept order failed', resp.status, text);
+                Alert.alert('Error', 'Failed to accept order.');
+            }
+        } catch (err) {
+            console.error('Accept order error', err);
+            Alert.alert('Network Error', 'Could not accept order. Try again.');
+        } finally {
+            setProcessingOrderId(null);
+        }
+    };
+
+    const handleRejectOrder = async (orderId) => {
+        if (!tokenFromContext || !orderId) return;
+
+        Alert.alert(
+            'Reject Order',
+            'Are you sure you want to reject this order?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Reject',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setProcessingOrderId(orderId);
+                        try {
+                            const resp = await fetch(`https://swe-lab-1.onrender.com/orders/${orderId}/reject`, {
+                                method: 'POST',
+                                headers: {
+                                    Authorization: `Bearer ${tokenFromContext}`,
+                                    Accept: 'application/json',
+                                },
+                            });
+
+                            if (resp.ok) {
+                                Alert.alert('Success', 'Order rejected.');
+                                await onRefresh();
+                            } else {
+                                const text = await resp.text().catch(() => null);
+                                console.warn('Reject order failed', resp.status, text);
+                                Alert.alert('Error', 'Failed to reject order.');
+                            }
+                        } catch (err) {
+                            console.error('Reject order error', err);
+                            Alert.alert('Network Error', 'Could not reject order. Try again.');
+                        } finally {
+                            setProcessingOrderId(null);
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    const handleCompleteOrder = async (orderId) => {
+        if (!tokenFromContext || !orderId) return;
+
+        Alert.alert(
+            'Complete Order',
+            'Mark this order as completed?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Complete',
+                    onPress: async () => {
+                        setProcessingOrderId(orderId);
+                        try {
+                            const resp = await fetch(`https://swe-lab-1.onrender.com/orders/${orderId}/complete`, {
+                                method: 'POST',
+                                headers: {
+                                    Authorization: `Bearer ${tokenFromContext}`,
+                                    Accept: 'application/json',
+                                },
+                            });
+
+                            if (resp.ok) {
+                                Alert.alert('Success', 'Order completed!');
+                                await onRefresh();
+                            } else {
+                                const text = await resp.text().catch(() => null);
+                                console.warn('Complete order failed', resp.status, text);
+                                Alert.alert('Error', 'Failed to complete order.');
+                            }
+                        } catch (err) {
+                            console.error('Complete order error', err);
+                            Alert.alert('Network Error', 'Could not complete order. Try again.');
+                        } finally {
+                            setProcessingOrderId(null);
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     // search & filter
     const filtered = orders.filter((o) => {
         if (filterStatus !== 'All' && o.status !== filterStatus) return false;
@@ -189,10 +355,11 @@ export default function Orders() {
     };
 
     function OrderRow({ order, onPress }) {
+        const orderId = (order.number ?? order.id ?? '').toString().substring(0, 5).toUpperCase();
         return (
             <TouchableOpacity style={styles.row} onPress={() => onPress(order)}>
                 <View style={styles.rowLeft}>
-                    <Text style={styles.orderNumber}>{order.number ?? `#${order.id}`}</Text>
+                    <Text style={styles.orderNumber}>#{orderId}</Text>
                     <Text style={styles.orderDate}>{formatDate(order.date)}</Text>
                 </View>
 
@@ -217,7 +384,9 @@ export default function Orders() {
     return (
         <SafeAreaView style={styles.screen}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Order History</Text>
+                <Text style={styles.headerTitle}>
+                    {isSupplier ? 'Incoming Orders' : 'Order History'}
+                </Text>
                 <TouchableOpacity
                     style={styles.headerAction}
                     onPress={() =>
@@ -251,7 +420,10 @@ export default function Orders() {
                 </View>
 
                 <View style={styles.filtersRow}>
-                    {['All', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Canceled'].map((s) => (
+                    {(isSupplier
+                        ? ['All', 'Pending', 'Accepted', 'Completed', 'Rejected']
+                        : ['All', 'Pending', 'Processing', 'Completed', 'Cancelled', 'Rejected']
+                    ).map((s) => (
                         <TouchableOpacity
                             key={s}
                             style={[styles.filterBtn, filterStatus === s && styles.filterBtnActive]}
@@ -289,7 +461,9 @@ export default function Orders() {
                 <View style={styles.modalBackdrop}>
                     <View style={styles.modalCard}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Order {selectedOrder?.number ?? selectedOrder?.id}</Text>
+                            <Text style={styles.modalTitle}>
+                                Order #{((selectedOrder?.number ?? selectedOrder?.id ?? '').toString().substring(0, 5).toUpperCase())}
+                            </Text>
                             <TouchableOpacity onPress={closeOrder}>
                                 <Ionicons name="close" size={22} color="#333" />
                             </TouchableOpacity>
@@ -313,49 +487,123 @@ export default function Orders() {
                                 <Text style={styles.modalValue}>${selectedOrder?.total}</Text>
                             </View>
 
+                            {selectedOrder?.delivery_option && (
+                                <View style={styles.modalRow}>
+                                    <Text style={styles.modalLabel}>Delivery Option</Text>
+                                    <Text style={styles.modalValue}>{selectedOrder.delivery_option}</Text>
+                                </View>
+                            )}
+
                             <View style={{ marginTop: 12 }}>
                                 <Text style={[styles.modalLabel, { marginBottom: 8 }]}>Items</Text>
-                                {(selectedOrder?.items ?? []).map((it) => (
-                                    <View key={it.id} style={styles.itemRow}>
-                                        <Text style={styles.itemTitle}>{it.title}</Text>
-                                        <Text style={styles.itemQty}>x{it.qty}</Text>
-                                        <Text style={styles.itemPrice}>${Number(it.price).toFixed(2)}</Text>
-                                    </View>
-                                ))}
+                                {(selectedOrder?.items ?? []).length === 0 ? (
+                                    <Text style={styles.modalValue}>No items listed</Text>
+                                ) : (
+                                    (selectedOrder?.items ?? []).map((it, index) => (
+                                        <View key={`item-${index}-${it.id}`} style={styles.itemRow}>
+                                            <Text style={styles.itemTitle}>{it.title}</Text>
+                                            <Text style={styles.itemQty}>x{it.qty}</Text>
+                                            <Text style={styles.itemPrice}>${Number(it.price).toFixed(2)}</Text>
+                                        </View>
+                                    ))
+                                )}
                             </View>
 
                             <View style={{ marginTop: 12 }}>
-                                <Text style={styles.modalLabel}>Shipping Address</Text>
+                                <Text style={styles.modalLabel}>Delivery Notes</Text>
                                 <Text style={styles.modalValue}>{selectedOrder?.shippingAddress ?? selectedOrder?.shipping_address ?? '—'}</Text>
                             </View>
+
+                            {selectedOrder?.rejection_reason && (
+                                <View style={{ marginTop: 12 }}>
+                                    <Text style={styles.modalLabel}>Rejection Reason</Text>
+                                    <Text style={[styles.modalValue, { color: '#e57373' }]}>{selectedOrder.rejection_reason}</Text>
+                                </View>
+                            )}
                         </ScrollView>
 
                         <View style={styles.modalFooter}>
-                            <TouchableOpacity
-                                style={styles.primaryBtn}
-                                onPress={() => {
-                                    Alert.alert('Support', 'Contact support flow not implemented');
-                                }}
-                            >
-                                <Text style={styles.primaryBtnText}>Contact Support</Text>
-                            </TouchableOpacity>
+                            {isSupplier ? (
+                                // Supplier action buttons based on order status
+                                <>
+                                    {selectedOrder?.status === 'Pending' && (
+                                        <>
+                                            <TouchableOpacity
+                                                style={[styles.primaryBtn, { backgroundColor: '#10b981' }]}
+                                                onPress={() => {
+                                                    closeOrder();
+                                                    handleAcceptOrder(selectedOrder.id);
+                                                }}
+                                                disabled={processingOrderId === selectedOrder?.id}
+                                            >
+                                                {processingOrderId === selectedOrder?.id ? (
+                                                    <ActivityIndicator size="small" color="#fff" />
+                                                ) : (
+                                                    <Text style={styles.primaryBtnText}>Accept</Text>
+                                                )}
+                                            </TouchableOpacity>
 
-                            {/* ❗️ONLY CONSUMER CAN SEND COMPLAINTS */}
-                            {!isSupplier && (
-                                <TouchableOpacity
-                                    style={[styles.primaryBtn, { backgroundColor: '#e74c3c', marginLeft: 8 }]}
-                                    onPress={() => {
-                                        closeOrder();
-                                        onComplain(selectedOrder);
-                                    }}
-                                >
-                                    <Text style={styles.primaryBtnText}>Complaint</Text>
-                                </TouchableOpacity>
+                                            <TouchableOpacity
+                                                style={[styles.primaryBtn, { backgroundColor: '#ef4444', marginLeft: 8 }]}
+                                                onPress={() => {
+                                                    closeOrder();
+                                                    handleRejectOrder(selectedOrder.id);
+                                                }}
+                                                disabled={processingOrderId === selectedOrder?.id}
+                                            >
+                                                <Text style={styles.primaryBtnText}>Reject</Text>
+                                            </TouchableOpacity>
+                                        </>
+                                    )}
+
+                                    {selectedOrder?.status === 'Accepted' && (
+                                        <TouchableOpacity
+                                            style={[styles.primaryBtn, { backgroundColor: '#2563eb' }]}
+                                            onPress={() => {
+                                                closeOrder();
+                                                handleCompleteOrder(selectedOrder.id);
+                                            }}
+                                            disabled={processingOrderId === selectedOrder?.id}
+                                        >
+                                            {processingOrderId === selectedOrder?.id ? (
+                                                <ActivityIndicator size="small" color="#fff" />
+                                            ) : (
+                                                <Text style={styles.primaryBtnText}>Mark as Complete</Text>
+                                            )}
+                                        </TouchableOpacity>
+                                    )}
+
+                                    <TouchableOpacity style={[styles.ghostBtn, { marginLeft: 8 }]} onPress={closeOrder}>
+                                        <Text style={styles.ghostBtnText}>Close</Text>
+                                    </TouchableOpacity>
+                                </>
+                            ) : (
+                                // Consumer buttons
+                                <>
+                                    <TouchableOpacity
+                                        style={styles.primaryBtn}
+                                        onPress={() => {
+                                            Alert.alert('Support', 'Contact support flow not implemented');
+                                        }}
+                                    >
+                                        <Text style={styles.primaryBtnText}>Contact Support</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        style={[styles.primaryBtn, { backgroundColor: '#e74c3c', marginLeft: 8 }]}
+                                        onPress={() => {
+                                            closeOrder();
+                                            onComplain(selectedOrder);
+                                        }}
+                                    >
+                                        <Text style={styles.primaryBtnText}>Complaint</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity style={[styles.ghostBtn, { marginLeft: 8 }]} onPress={closeOrder}>
+                                        <Text style={styles.ghostBtnText}>Close</Text>
+                                    </TouchableOpacity>
+                                </>
                             )}
-
-                            <TouchableOpacity style={[styles.ghostBtn, { marginLeft: 8 }]} onPress={closeOrder}>
-                                <Text style={styles.ghostBtnText}>Close</Text>
-                            </TouchableOpacity>
                         </View>
                     </View>
                 </View>
