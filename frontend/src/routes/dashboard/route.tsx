@@ -96,6 +96,7 @@ function DashboardLayout() {
 
       if (
         statusCode === 401 ||
+        statusCode === 500 ||
         errorMessage.includes('401') ||
         errorMessage.includes('Unauthorized') ||
         errorMessage.includes('No access token')

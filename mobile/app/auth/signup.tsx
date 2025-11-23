@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useAuth } from "../context/AuthContext";
 
 export default function Signup() {
+    const [fullName, setFullName] = useState(""); // <-- NEW FIELD
     const [businessName, setBusinessName] = useState("");
     const [businessType, setBusinessType] = useState("");
     const [address, setAddress] = useState("");
@@ -23,7 +24,7 @@ export default function Signup() {
             Alert.alert("Error", "Please select a role (Consumer or Supplier).");
             return;
         }
-        if (!businessName || !email || !password) {
+        if (!fullName || !businessName || !email || !password) {
             Alert.alert("Error", "Please fill in all required fields.");
             return;
         }
@@ -35,6 +36,7 @@ export default function Signup() {
             const endpoint = `${base}/${role}`;
 
             const payload: Record<string, any> = {
+                full_name: fullName, // <-- NEW FIELD
                 business_name: businessName,
                 business_type: businessType,
                 address,
@@ -66,7 +68,7 @@ export default function Signup() {
             }
             Alert.alert("Success", "Account created successfully!");
             await signIn(email, password);
-            
+
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             Alert.alert("Error", msg);
@@ -125,6 +127,20 @@ export default function Signup() {
                 </View>
 
                 <View className="space-y-4">
+
+                    {/* NEW NAME FIELD */}
+                    <View>
+                        <Text className="text-sm font-medium text-gray-700 mb-2">
+                            Name and Surname *
+                        </Text>
+                        <TextInput
+                            value={fullName}
+                            onChangeText={setFullName}
+                            placeholder="Enter your full name"
+                            className="border border-gray-300 rounded-xl px-4 py-3 bg-white text-base"
+                        />
+                    </View>
+
                     <View>
                         <Text className="text-sm font-medium text-gray-700 mb-2">
                             Business Name *
@@ -203,9 +219,7 @@ export default function Signup() {
 
                     <View className="flex-row gap-3">
                         <View className="flex-1">
-                            <Text className="text-sm font-medium text-gray-700 mb-2">
-                                City
-                            </Text>
+                            <Text className="text-sm font-medium text-gray-700 mb-2">City</Text>
                             <TextInput
                                 value={city}
                                 onChangeText={setCity}
@@ -213,10 +227,9 @@ export default function Signup() {
                                 className="border border-gray-300 rounded-xl px-4 py-3 bg-white text-base"
                             />
                         </View>
+
                         <View className="flex-1">
-                            <Text className="text-sm font-medium text-gray-700 mb-2">
-                                Country
-                            </Text>
+                            <Text className="text-sm font-medium text-gray-700 mb-2">Country</Text>
                             <TextInput
                                 value={country}
                                 onChangeText={setCountry}
@@ -230,9 +243,7 @@ export default function Signup() {
                 <Pressable
                     onPress={handleSignUp}
                     className="bg-blue-500 rounded-xl py-4 items-center mt-8 mb-4 shadow-lg"
-                    style={({ pressed }) => ({
-                        opacity: pressed ? 0.8 : 1,
-                    })}
+                    style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
                     disabled={isLoading}
                 >
                     {isLoading ? (
