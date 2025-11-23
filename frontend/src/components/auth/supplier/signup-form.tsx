@@ -30,6 +30,7 @@ const signupSchema = z
     password: z.string().min(8, 'Password must be at least 8 characters long'),
     confirmPassword: z.string(),
     phoneNumber: z.string().optional(),
+    name: z.string().min(1, 'Name is required'),
     address: z.string().optional(),
     city: z.string().optional(),
     country: z.string().optional(),
@@ -53,6 +54,7 @@ export function SupplierSignupForm({
       password: '',
       confirmPassword: '',
       phoneNumber: '',
+      name: '',
       address: '',
       city: '',
       country: '',
@@ -72,6 +74,7 @@ export function SupplierSignupForm({
       password: data.password,
       phone_number: data.phoneNumber || undefined,
       subscription_tier: 'trial', // Default to trial as per backend schema
+      name: data.name,
     }
 
     signupMutation.mutate(apiData)
@@ -89,6 +92,19 @@ export function SupplierSignupForm({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Your Name</FormLabel>
+                    <FormControl>
+                      <Input type="text" placeholder="John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="businessName"

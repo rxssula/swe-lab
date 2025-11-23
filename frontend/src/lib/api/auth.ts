@@ -9,6 +9,7 @@ export interface ConsumerSignupRequest {
   email: string
   password: string
   phone_number?: string
+  name: string
 }
 
 export interface SupplierSignupRequest {
@@ -21,6 +22,7 @@ export interface SupplierSignupRequest {
   password: string
   phone_number?: string
   subscription_tier?: string
+  name: string
 }
 
 export interface User {
