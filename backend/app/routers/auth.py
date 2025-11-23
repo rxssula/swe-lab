@@ -65,6 +65,7 @@ def signup_consumer(data: ConsumerSignup, db: Session = Depends(get_db)):
         return SignupResponse(
             access_token=token.access_token,
             token_type=token.token_type,
+            consumer_id=consumer.id,
             user=UserRead.model_validate(user),
             user_type=token.user_type,
             role=token.role
@@ -145,7 +146,8 @@ def signup_supplier(data: SupplierSignup, db: Session = Depends(get_db)):
             token_type=token.token_type,
             user=UserRead.model_validate(user),
             user_type=token.user_type,
-            role=token.role
+            role=token.role,
+            supplier_id=supplier.id
         )
 
     except IntegrityError as e:
@@ -175,16 +177,20 @@ async def login_for_access_token(
 
     user_type = None
     role = None
+    consumer_id = None
+    supplier_id = None
 
     consumer_staff = db.query(ConsumerStaff).filter(ConsumerStaff.user_id == user.id).first()
     if consumer_staff:
         user_type = "consumer"
         role = consumer_staff.role
+        consumer_id = consumer_staff.consumer_id
 
     supplier_staff = db.query(SupplierStaff).filter(SupplierStaff.user_id == user.id).first()
     if supplier_staff:
         user_type = "supplier"
         role = supplier_staff.role
+        supplier_id = supplier_staff.supplier_id
 
     if not user_type:
         raise HTTPException(
@@ -206,7 +212,9 @@ async def login_for_access_token(
         token_type=token.token_type,
         user=UserRead.model_validate(user),
         user_type=token.user_type,
-        role=token.role
+        role=token.role,
+        consumer_id=consumer_id,
+        supplier_id=supplier_id
     )
 
 

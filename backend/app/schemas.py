@@ -66,6 +66,10 @@ class SignupResponse(BaseModel):
     user: UserRead
     user_type: str
     role: str
+    consumer_id: Optional[UUID] = None
+    supplier_id: Optional[UUID] = None
+
+
 
 
 class ConsumerBase(BaseModel):

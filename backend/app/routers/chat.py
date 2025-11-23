@@ -148,10 +148,11 @@ def get_or_create_thread(db: Session, link_id: UUID) -> ChatThread:
     ).first()
 
     if not thread:
+        now = datetime.utcnow()
         thread = ChatThread(
             link_id=link_id,
-            created_at=datetime.utcnow(),
-            last_message_at=None
+            created_at=now,
+            last_message_at=now
         )
         db.add(thread)
         db.commit()
