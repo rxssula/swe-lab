@@ -253,28 +253,20 @@ async def read_users_me(
         # Find manager (owner or manager role) for this consumer
         manager_staff = db.query(ConsumerStaff).join(User).filter(
             ConsumerStaff.consumer_id == cs.consumer_id,
-            ConsumerStaff.role.in_(['owner', 'manager']),
+            ConsumerStaff.role.in_(['MANAGER']),
             ConsumerStaff.user_id != user.id  # Exclude current user
-        ).order_by(
-            # Prioritize owner over manager
-            case((ConsumerStaff.role == 'owner', 0), else_=1)
         ).first()
 
-        manager_info = None
-        if manager_staff:
+        manager_name = None
+        if manager_staff and cs.role == 'STAFF':
             manager_user = db.query(User).filter(User.id == manager_staff.user_id).first()
             if manager_user:
-                manager_info = ManagerInfo(
-                    id=manager_user.id,
-                    email=manager_user.email,
-                    phone_number=manager_user.phone_number,
-                    role=manager_staff.role
-                )
+                manager_name = manager_user.name
 
         consumer_associations.append(ConsumerAssociation(
             consumer=ConsumerRead.model_validate(consumer),
             role=cs.role,
-            manager=manager_info
+            manager=manager_name
         ))
 
     # Get all supplier associations
@@ -291,28 +283,20 @@ async def read_users_me(
         # Find manager (owner or manager role) for this supplier
         manager_staff = db.query(SupplierStaff).join(User).filter(
             SupplierStaff.supplier_id == ss.supplier_id,
-            SupplierStaff.role.in_(['OWNER', 'MANAGER']),
+            SupplierStaff.role.in_(['MANAGER']),
             SupplierStaff.user_id != user.id  # Exclude current user
-        ).order_by(
-            # Prioritize owner over manager
-            case((SupplierStaff.role == 'OWNER', 0), else_=1)
         ).first()
 
-        manager_info = None
-        if manager_staff:
+        manager_name = None
+        if manager_staff and ss.role == 'SALES':
             manager_user = db.query(User).filter(User.id == manager_staff.user_id).first()
             if manager_user:
-                manager_info = ManagerInfo(
-                    id=manager_user.id,
-                    email=manager_user.email,
-                    phone_number=manager_user.phone_number,
-                    role=manager_staff.role
-                )
+                manager_name = manager_user.name
 
         supplier_associations.append(SupplierAssociation(
             supplier=SupplierRead.model_validate(supplier),
             role=ss.role,
-            manager=manager_info
+            manager=manager_name
         ))
 
     return UserMeResponse(

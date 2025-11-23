@@ -132,7 +132,7 @@ function DashboardLayout() {
           <Separator orientation="vertical" className="mr-2 h-4" />
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-semibold">
-              {userType === 'supplier' ? 'Supplier' : 'Consumer'} Dashboard
+              {userType === 'supplier' ? 'Supplier' : 'Consumer'}
             </h1>
           </div>
           <div className="ml-auto">

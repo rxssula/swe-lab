@@ -15,8 +15,8 @@ import { useAuth } from '../context/AuthContext'; // adjust path if needed
 export default function AddWorker() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('sales');
-  const [phone, setPhone] = useState('sales');
+  const [phone, setPhone] = useState('');
+  const [name, setName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   // try to get token from AuthProvider if available
@@ -24,7 +24,7 @@ export default function AddWorker() {
   if (!token) signOut();
   console.log(user);
  
-  const WORKERS_URL = 'https://swe-lab-1.onrender.com/supplier/workers/'; // <- change to your API endpoint
+  const WORKERS_URL = `https://swe-lab-1.onrender.com/${user.userType}s/${user.id}/staff`; // <- change to your API endpoint
 
   let roleOptionsArray: { label: string; value: string }[] = [];
   if (user?.role === "OWNER") {
@@ -45,6 +45,7 @@ export default function AddWorker() {
         ? [{ label: "Staff", value: "STAFF" }]
         : [{ label: "Sales Representative", value: "SALES" }];
   }
+  const [role, setRole] = useState<string>(roleOptionsArray[0]?.value || "");
 
   const validate = () => {
     if (!email.trim()) {
@@ -57,6 +58,14 @@ export default function AddWorker() {
     }
     if (!phone) {
       Alert.alert('Validation', 'Phone is required');
+      return false;
+    }
+    if (!name) {
+      Alert.alert('Validation', 'Name is required');
+      return false;
+    }
+    if (!role) {
+      Alert.alert('Validation', 'Position is required');
       return false;
     }
     return true;
@@ -73,13 +82,13 @@ export default function AddWorker() {
       }
 
       const payload = {
-        username: email.trim(),
+        email: email.trim(),
         password: password,
-        role,
-        phone,
-        // consumer_id: user.id ? user.userType==="consumer" : null,
-        // supplier_id: user.id ? user.userType==="supplier" : null,
+        role: role,
+        phone_number: phone,
+        name: name,
       };
+      console.log("payload:", payload);
 
       const resp = await fetch(WORKERS_URL, {
         method: 'POST',
@@ -100,6 +109,8 @@ export default function AddWorker() {
         setEmail('');
         setPassword('');
         setRole(role);
+        setName('');
+        setPhone('');
       } else {
         const msg =
           (data?.detail && Array.isArray(data.detail)
@@ -120,6 +131,15 @@ export default function AddWorker() {
     <View style={styles.container}>
       <Text style={styles.title}>Add New Worker</Text>
 
+      <Text style={styles.label}>Worker Full Name</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Enter worker name"
+        value={name}
+        onChangeText={setName}
+        autoCapitalize="none"
+      />
+
       <Text style={styles.label}>Email</Text>
       <TextInput
         style={styles.input}
@@ -129,7 +149,7 @@ export default function AddWorker() {
         autoCapitalize="none"
       />
 
-      <Text style={styles.label}>Email</Text>
+      <Text style={styles.label}>Phone</Text>
       <TextInput
         style={styles.input}
         placeholder="Enter worker phone"
