@@ -24,9 +24,9 @@ import { useSupplierSignup } from '@/lib/hooks/use-signup'
 
 const signupSchema = z
   .object({
-    companyName: z.string().min(1, 'Company name is required'),
+    businessName: z.string().min(1, 'Company name is required'),
     businessType: z.string().optional(),
-    email: z.string().email('Please enter a valid email address'),
+    email: z.email('Please enter a valid email address'),
     password: z.string().min(8, 'Password must be at least 8 characters long'),
     confirmPassword: z.string(),
     phoneNumber: z.string().optional(),
@@ -47,7 +47,7 @@ export function SupplierSignupForm({
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      companyName: '',
+      businessName: '',
       businessType: '',
       email: '',
       password: '',
@@ -63,7 +63,7 @@ export function SupplierSignupForm({
 
   const onSubmit = async (data: SignupFormValues) => {
     const apiData = {
-      company_name: data.companyName,
+      business_name: data.businessName,
       business_type: data.businessType || undefined,
       address: data.address || undefined,
       city: data.city || undefined,
@@ -91,10 +91,10 @@ export function SupplierSignupForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="companyName"
+                name="businessName"
                 render={({ field }) => (
                   <FormItem className="md:col-span-2">
-                    <FormLabel>Company Name</FormLabel>
+                    <FormLabel>Business Name</FormLabel>
                     <FormControl>
                       <Input
                         type="text"

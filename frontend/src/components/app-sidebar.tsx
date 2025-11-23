@@ -31,9 +31,7 @@ type UserType = 'supplier' | 'consumer'
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   userType: UserType
   user: {
-    name: string
     email: string
-    avatar?: string
   }
 }
 
