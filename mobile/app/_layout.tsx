@@ -10,7 +10,6 @@ export default function RootLayout() {
     <AuthProvider>
       <Stack>
         {/* The (tabs) group contains your bottom tabs */}
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 
         {/* Auth screens are separate stack screens, not tabs */}
         <Stack.Screen name="auth" options={{ headerShown: false }} />
