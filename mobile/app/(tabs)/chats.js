@@ -1,235 +1,290 @@
-// app/.../chats.js
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react'
 import {
-    View,
-    Text,
-    FlatList,
-    TouchableOpacity,
-    Image,
-    StyleSheet,
-    TextInput,
-    Modal,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
+import { useFocusEffect } from '@react-navigation/native'
 
-// Existing chat list
-const chats = [
-    {
-        id: '1',
-        name: 'Alice Johnson',
-        lastMessage: 'Hey! Are you coming to the party?',
-        time: '12:45 PM',
-        avatar: 'https://i.pravatar.cc/150?img=1',
-    },
-    {
-        id: '2',
-        name: 'Bob Smith',
-        lastMessage: 'Sure, let’s meet tomorrow.',
-        time: '11:30 AM',
-        avatar: 'https://i.pravatar.cc/150?img=2',
-    },
-    {
-        id: '3',
-        name: 'Charlie Davis',
-        lastMessage: 'Did you check the document I sent?',
-        time: 'Yesterday',
-        avatar: 'https://i.pravatar.cc/150?img=3',
-    },
-];
+import { useAuth } from '../context/AuthContext'
+import { getChatThreads } from '../lib/api/chat'
+import { getLinkRequests, getMyLinks } from '../lib/api/links'
 
-// Fake linked suppliers/consumers
-// Replace with your API later
-const linkedContacts = [
-    { id: '10', name: 'Supplier A', avatar: 'https://i.pravatar.cc/150?img=11' },
-    { id: '11', name: 'Supplier B', avatar: 'https://i.pravatar.cc/150?img=12' },
-    { id: '12', name: 'Supplier C', avatar: 'https://i.pravatar.cc/150?img=13' },
-];
+const formatDistanceToNow = (date) => {
+  if (!date) return '—'
+  const then = typeof date === 'string' ? new Date(date) : date
+  const diffInSeconds = Math.floor((Date.now() - then.getTime()) / 1000)
+  if (diffInSeconds < 60) return 'just now'
+  if (diffInSeconds < 3600) {
+    const minutes = Math.floor(diffInSeconds / 60)
+    return `${minutes} min${minutes !== 1 ? 's' : ''} ago`
+  }
+  if (diffInSeconds < 86400) {
+    const hours = Math.floor(diffInSeconds / 3600)
+    return `${hours} hr${hours !== 1 ? 's' : ''} ago`
+  }
+  const days = Math.floor(diffInSeconds / 86400)
+  return `${days} day${days !== 1 ? 's' : ''} ago`
+}
 
 export default function ChatsList() {
-    const router = useRouter();
+  const router = useRouter()
+  const { token, user } = useAuth()
 
-    const [modalVisible, setModalVisible] = useState(false);
-    const [search, setSearch] = useState('');
+  const [threads, setThreads] = useState([])
+  const [links, setLinks] = useState([])
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState(null)
 
-    const filteredContacts = linkedContacts.filter((item) =>
-        item.name.toLowerCase().includes(search.toLowerCase())
-    );
+  const userType = user?.userType === 'supplier' ? 'supplier' : 'consumer'
 
-    const openNewChat = (contact) => {
-        setModalVisible(false);
-        router.push(`/chats/chat`);
-    };
+  const fetchData = useCallback(
+    async (showLoading = true) => {
+      if (!token) return
+      if (showLoading) {
+        setLoading(true)
+      } else {
+        setRefreshing(true)
+      }
+      try {
+        const [threadResponse, linkResponse] = await Promise.all([
+          getChatThreads(token),
+          userType === 'consumer'
+            ? getMyLinks(token, 'accepted')
+            : getLinkRequests(token, 'accepted'),
+        ])
+        setThreads(threadResponse)
+        setLinks(linkResponse)
+        setError(null)
+      } catch (err) {
+        console.error('Failed to load chat threads', err)
+        setError(err instanceof Error ? err.message : 'Failed to load chats')
+      } finally {
+        setLoading(false)
+        setRefreshing(false)
+      }
+    },
+    [token, userType],
+  )
 
-    const renderChatRow = ({ item }) => (
-        <TouchableOpacity
-            style={styles.chatRow}
-            onPress={() => router.push(`/chats/chat`)}
-        >
-            <Image source={{ uri: item.avatar }} style={styles.avatar} />
-            <View style={styles.chatInfo}>
-                <View style={styles.chatHeader}>
-                    <Text style={styles.name}>{item.name}</Text>
-                    <Text style={styles.time}>{item.time}</Text>
-                </View>
-                <Text style={styles.lastMessage} numberOfLines={1}>
-                    {item.lastMessage}
-                </Text>
-            </View>
-        </TouchableOpacity>
-    );
+  useFocusEffect(
+    useCallback(() => {
+      fetchData()
+    }, [fetchData]),
+  )
 
-    return (
-        <View style={styles.container}>
+  const linkMap = useMemo(() => {
+    const map = new Map()
+    links.forEach((link) => {
+      map.set(link.id, link)
+    })
+    return map
+  }, [links])
 
-            {/* Header with search bar + new chat icon */}
-            <View style={styles.topRow}>
-                <TextInput
-                    placeholder="Search chats..."
-                    style={styles.searchBar}
-                />
-                <TouchableOpacity
-                    style={styles.newChatBtn}
-                    onPress={() => setModalVisible(true)}
-                >
-                    <Ionicons name="chatbubble-ellipses-outline" size={26} color="#333" />
-                </TouchableOpacity>
-            </View>
+  const getOtherPartyName = (thread) => {
+    const link = linkMap.get(thread.link_id)
+    if (!link) {
+      return userType === 'consumer' ? 'Supplier' : 'Consumer'
+    }
+    return userType === 'consumer'
+      ? link.supplier_name || 'Supplier'
+      : link.consumer_name || 'Consumer'
+  }
 
-            <FlatList
-                data={chats}
-                keyExtractor={(item) => item.id}
-                renderItem={renderChatRow}
-                ItemSeparatorComponent={() => <View style={styles.separator} />}
-            />
+  const filteredThreads = useMemo(() => {
+    const lowerSearch = search.trim().toLowerCase()
+    if (!lowerSearch) return threads
+    return threads.filter((thread) =>
+      getOtherPartyName(thread).toLowerCase().includes(lowerSearch),
+    )
+  }, [search, threads])
 
-            {/* NEW CHAT POPUP */}
-            <Modal visible={modalVisible} transparent animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.popupWindow}>
+  const handleRefresh = () => {
+    fetchData(false)
+  }
 
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Start New Chat</Text>
-                            <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <Ionicons name="close" size={26} color="#333" />
-                            </TouchableOpacity>
-                        </View>
+  const getOtherPartyId = (thread) =>
+    userType === 'consumer' ? thread.supplier_id : thread.consumer_id
 
-                        {/* Search inside modal */}
-                        <TextInput
-                            placeholder="Search contacts..."
-                            value={search}
-                            onChangeText={setSearch}
-                            style={styles.modalSearch}
-                        />
+  const openThread = (thread) => {
+    const counterpartName = getOtherPartyName(thread)
+    router.push({
+      pathname: '/chats/[linkId]',
+      params: {
+        linkId: thread.link_id,
+        threadId: thread.id,
+        name: counterpartName,
+        counterpartId: getOtherPartyId(thread),
+      },
+    })
+  }
 
-                        <FlatList
-                            data={filteredContacts}
-                            keyExtractor={(item) => item.id}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    style={styles.contactRow}
-                                    onPress={() => openNewChat(item)}
-                                >
-                                    <Image
-                                        source={{ uri: item.avatar }}
-                                        style={styles.modalAvatar}
-                                    />
-                                    <Text style={styles.contactName}>{item.name}</Text>
-                                </TouchableOpacity>
-                            )}
-                        />
-                    </View>
-                </View>
-            </Modal>
+  const renderChatRow = ({ item }) => (
+    <TouchableOpacity style={styles.chatRow} onPress={() => openThread(item)}>
+      <View style={styles.avatarFallback}>
+        <Text style={styles.avatarInitials}>
+        {getOtherPartyName(item)
+            .split(' ')
+            .slice(0, 2)
+            .map((word) => word.charAt(0).toUpperCase())
+            .join('')}
+        </Text>
+      </View>
+      <View style={styles.chatInfo}>
+        <View style={styles.chatHeader}>
+          <Text style={styles.name}>{getOtherPartyName(item)}</Text>
+          {item.last_message_at ? (
+            <Text style={styles.time}>{formatDistanceToNow(item.last_message_at)}</Text>
+          ) : (
+            <Text style={styles.time}>No messages</Text>
+          )}
         </View>
-    );
+        <Text style={styles.lastMessage}>
+          {item.unread_count > 0
+            ? `${item.unread_count} unread message${item.unread_count > 1 ? 's' : ''}`
+            : 'Tap to continue the conversation'}
+        </Text>
+      </View>
+      {item.unread_count > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{item.unread_count}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  )
+
+  if (!token) {
+    return (
+      <View style={styles.centerContent}>
+        <Text style={styles.emptyText}>Sign in to view your chats.</Text>
+      </View>
+    )
+  }
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.topRow}>
+        <Ionicons name="search" size={18} color="#6b7280" style={styles.searchIcon} />
+        <TextInput
+          placeholder="Search chats..."
+          style={styles.searchBar}
+          value={search}
+          onChangeText={setSearch}
+          autoCorrect={false}
+          placeholderTextColor="#9ca3af"
+        />
+        <TouchableOpacity onPress={handleRefresh} accessibilityLabel="Refresh chats">
+          <Ionicons name="refresh" size={22} color="#374151" />
+        </TouchableOpacity>
+      </View>
+
+      {loading ? (
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color="#2563eb" />
+          <Text style={styles.loadingText}>Loading chats...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredThreads}
+          keyExtractor={(item) => item.link_id}
+          renderItem={renderChatRow}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+          ListEmptyComponent={
+            <View style={styles.centerContent}>
+              <Text style={styles.emptyText}>
+                {error
+                  ? error
+                  : 'No chat threads yet. Link with a partner to start a conversation.'}
+              </Text>
+            </View>
+          }
+          contentContainerStyle={
+            filteredThreads.length === 0 ? styles.listEmptyContainer : undefined
+          }
+        />
+      )}
+    </View>
+  )
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f2f2f2' },
-
-    topRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 12,
-        backgroundColor: '#fff',
-    },
-
-    searchBar: {
-        flex: 1,
-        backgroundColor: '#eee',
-        padding: 10,
-        borderRadius: 10,
-        fontSize: 14,
-    },
-
-    newChatBtn: {
-        marginLeft: 12,
-        padding: 5,
-    },
-
-    chatRow: {
-        flexDirection: 'row',
-        padding: 15,
-        backgroundColor: '#fff',
-        alignItems: 'center',
-    },
-    avatar: { width: 50, height: 50, borderRadius: 25, marginRight: 15 },
-    chatInfo: { flex: 1 },
-    chatHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 5,
-    },
-    name: { fontSize: 16, fontWeight: 'bold' },
-    time: { fontSize: 12, color: '#888' },
-    lastMessage: { fontSize: 14, color: '#555' },
-    separator: { height: 1, backgroundColor: '#eee', marginLeft: 80 },
-
-    /* Modal styles */
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.35)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    popupWindow: {
-        width: '85%',
-        backgroundColor: '#fff',
-        borderRadius: 15,
-        padding: 15,
-        maxHeight: '70%',
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    modalTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-    },
-    modalSearch: {
-        backgroundColor: '#eee',
-        padding: 10,
-        borderRadius: 10,
-        marginBottom: 10,
-    },
-    contactRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 10,
-    },
-    modalAvatar: {
-        width: 45,
-        height: 45,
-        borderRadius: 22,
-        marginRight: 12,
-    },
-    contactName: {
-        fontSize: 16,
-        fontWeight: '500',
-    },
-});
+  container: { flex: 1, backgroundColor: '#f3f4f6' },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    gap: 8,
+  },
+  searchIcon: { marginRight: -4 },
+  searchBar: {
+    flex: 1,
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    fontSize: 14,
+    color: '#111827',
+  },
+  chatRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  avatarFallback: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#dbeafe',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  avatarInitials: { color: '#1d4ed8', fontWeight: '600' },
+  chatInfo: { flex: 1 },
+  chatHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  name: { fontSize: 16, fontWeight: '600', color: '#111827', maxWidth: '75%' },
+  time: { fontSize: 12, color: '#6b7280' },
+  lastMessage: { fontSize: 13, color: '#4b5563' },
+  separator: { height: 1, backgroundColor: '#e5e7eb', marginLeft: 76 },
+  badge: {
+    backgroundColor: '#ef4444',
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+    paddingHorizontal: 6,
+  },
+  badgeText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  centerContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  loadingText: { marginTop: 8, color: '#6b7280' },
+  emptyText: { textAlign: 'center', color: '#6b7280' },
+  listEmptyContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+})
