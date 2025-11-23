@@ -381,7 +381,7 @@ def get_messages(
     # Get messages
     messages = db.query(ChatMessage).filter(
         ChatMessage.thread_id == thread.id
-    ).order_by(ChatMessage.sent_at.desc()).limit(limit).offset(offset).all()
+    ).order_by(ChatMessage.sent_at.asc()).limit(limit).offset(offset).all()
 
     # Format response with attachments
     result = []
