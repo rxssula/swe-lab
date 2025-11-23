@@ -276,7 +276,9 @@ export function getWebSocketUrl(linkId: string): string {
     throw new Error('No access token found')
   }
 
-  const baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+  const rawBaseUrl =
+    import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+  const baseUrl = rawBaseUrl.replace(/\/+$/, '')
   const wsProtocol = baseUrl.startsWith('https') ? 'wss' : 'ws'
   const wsBaseUrl = baseUrl.replace(/^https?/, wsProtocol)
 
