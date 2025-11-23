@@ -35,6 +35,19 @@ class CategoryResponse(BaseModel):
         from_attributes = True
 
 
+class CategoryTreeResponse(BaseModel):
+    """Category with nested children for hierarchical display"""
+    id: UUID
+    name: str
+    description: str | None
+    parent_category_id: UUID | None
+    children: List['CategoryTreeResponse'] = []
+    product_count: int = 0  # Total products in this category (including subcategories)
+
+    class Config:
+        from_attributes = True
+
+
 
 @router.post("/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 def create_category(
@@ -78,6 +91,10 @@ def list_categories(
     """
     List all categories or subcategories of a parent.
     All authenticated users can view categories.
+
+    Parameters:
+    - parent_id: Optional. If provided, returns only direct children of this category.
+                 If omitted, returns all categories (flat list).
     """
     query = db.query(Category)
 
@@ -85,6 +102,99 @@ def list_categories(
         query = query.filter(Category.parent_category_id == parent_id)
 
     categories = query.all()
+
+    return [CategoryResponse.model_validate(c) for c in categories]
+
+
+@router.get("/tree", response_model=List[CategoryTreeResponse])
+def get_category_tree(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get hierarchical category tree structure.
+    Returns root categories with nested children.
+
+    Example response:
+    [
+      {
+        "id": "...",
+        "name": "Food Products",
+        "description": "All food items",
+        "parent_category_id": null,
+        "product_count": 450,
+        "children": [
+          {
+            "id": "...",
+            "name": "Dairy",
+            "parent_category_id": "...",
+            "product_count": 120,
+            "children": [
+              {
+                "id": "...",
+                "name": "Cheese",
+                "product_count": 45,
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+    """
+    from app.models.user import Product
+
+    # Get all categories
+    all_categories = db.query(Category).all()
+
+    # Get product counts per category
+    product_counts = {}
+    for cat in all_categories:
+        count = db.query(Product).filter(
+            Product.category_id == cat.id,
+            Product.is_active == True
+        ).count()
+        product_counts[cat.id] = count
+
+    # Build category map
+    category_map = {}
+    for cat in all_categories:
+        category_map[cat.id] = CategoryTreeResponse(
+            id=cat.id,
+            name=cat.name,
+            description=cat.description,
+            parent_category_id=cat.parent_category_id,
+            children=[],
+            product_count=product_counts.get(cat.id, 0)
+        )
+
+    # Build tree structure
+    root_categories = []
+    for cat in all_categories:
+        cat_node = category_map[cat.id]
+        if cat.parent_category_id is None:
+            # Root category
+            root_categories.append(cat_node)
+        else:
+            # Child category - add to parent
+            if cat.parent_category_id in category_map:
+                category_map[cat.parent_category_id].children.append(cat_node)
+
+    return root_categories
+
+
+@router.get("/roots", response_model=List[CategoryResponse])
+def get_root_categories(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get only root (top-level) categories.
+    These are categories with no parent.
+    """
+    categories = db.query(Category).filter(
+        Category.parent_category_id.is_(None)
+    ).all()
 
     return [CategoryResponse.model_validate(c) for c in categories]
 

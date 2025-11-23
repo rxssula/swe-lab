@@ -134,10 +134,120 @@ def create_supplier_staff(
         raise HTTPException(status_code=500, detail=f"Failed to create staff member: {str(e)}")
 
 
+@router.get("/search", response_model=List[SupplierByCategoryResponse])
+def search_suppliers(
+    name: str | None = None,
+    city: str | None = None,
+    country: str | None = None,
+    linked_only: bool = False,
+    limit: int = 20,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    General supplier search with flexible filters.
+    Only consumers can use this endpoint.
+
+    Parameters:
+    - name: Search by business name (partial match, case-insensitive)
+    - city: Filter by city (exact match)
+    - country: Filter by country (exact match)
+    - linked_only: If True, only return suppliers the consumer is linked to
+    - limit: Maximum results to return (default: 20, max: 100)
+    - offset: Number of results to skip for pagination (default: 0)
+
+    Returns list of suppliers with:
+    - Supplier information
+    - Total active products
+    - Link status with current consumer
+    """
+    # Verify user is a consumer
+    consumer = get_consumer_for_user(db, current_user)
+    if not consumer:
+        raise HTTPException(
+            status_code=403,
+            detail="Only consumers can search suppliers"
+        )
+
+    # Validate pagination limits
+    if limit > 100:
+        limit = 100
+    if limit < 1:
+        limit = 20
+    if offset < 0:
+        offset = 0
+
+    # Build query
+    query = db.query(Supplier)
+
+    # Apply filters
+    if name:
+        query = query.filter(Supplier.business_name.ilike(f"%{name}%"))
+    if city:
+        query = query.filter(Supplier.city == city)
+    if country:
+        query = query.filter(Supplier.country == country)
+
+    # Get link information for this consumer
+    links = db.query(ConsumerSupplierLink).filter(
+        ConsumerSupplierLink.consumer_id == consumer.id
+    ).all()
+
+    link_map = {
+        link.supplier_id: link.status.value
+        for link in links
+    }
+
+    # If linked_only, filter to only linked suppliers
+    if linked_only:
+        linked_supplier_ids = [
+            link.supplier_id for link in links
+            if link.status == LinkStatus.ACCEPTED
+        ]
+        if not linked_supplier_ids:
+            return []
+        query = query.filter(Supplier.id.in_(linked_supplier_ids))
+
+    # Apply pagination
+    suppliers = query.offset(offset).limit(limit).all()
+
+    result = []
+    for supplier in suppliers:
+        # Check link status
+        is_linked = link_map.get(supplier.id) == LinkStatus.ACCEPTED.value
+        link_status = link_map.get(supplier.id)
+
+        # Get total active products for this supplier
+        total_products = db.query(func.count(Product.id)).filter(
+            Product.supplier_id == supplier.id,
+            Product.is_active == True
+        ).scalar()
+
+        result.append(SupplierByCategoryResponse(
+            supplier_id=supplier.id,
+            business_name=supplier.business_name,
+            business_type=supplier.business_type,
+            city=supplier.city,
+            country=supplier.country,
+            product_count_in_category=0,  # Not applicable for general search
+            total_active_products=total_products or 0,
+            is_linked=is_linked,
+            link_status=link_status
+        ))
+
+    # Sort by linked status first, then by total products
+    result.sort(key=lambda x: (not x.is_linked, -x.total_active_products))
+
+    return result
+
+
 @router.get("/by-category/{category_id}", response_model=List[SupplierByCategoryResponse])
 def get_suppliers_by_category(
     category_id: UUID,
     linked_only: bool = False,
+    limit: int = 20,
+    offset: int = 0,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -148,6 +258,8 @@ def get_suppliers_by_category(
     Parameters:
     - category_id: The category to search for
     - linked_only: If True, only return suppliers the consumer is linked to
+    - limit: Maximum results to return (default: 20, max: 100)
+    - offset: Number of results to skip for pagination (default: 0)
 
     Returns list of suppliers with:
     - Supplier information
@@ -162,6 +274,14 @@ def get_suppliers_by_category(
             status_code=403,
             detail="Only consumers can search suppliers by category"
         )
+
+    # Validate pagination limits
+    if limit > 100:
+        limit = 100
+    if limit < 1:
+        limit = 20
+    if offset < 0:
+        offset = 0
 
     # Verify category exists
     category = db.query(Category).filter(Category.id == category_id).first()
@@ -180,7 +300,7 @@ def get_suppliers_by_category(
     ).filter(
         Product.category_id == category_id,
         Product.is_active == True
-    ).group_by(Supplier.id).all()
+    ).group_by(Supplier.id).offset(offset).limit(limit).all()
 
     if not suppliers_with_products:
         return []
