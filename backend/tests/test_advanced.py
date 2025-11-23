@@ -73,7 +73,7 @@ print("="*70 + "\n")
 
 # Create Supplier
 supplier_data = {
-    "company_name": "Advanced Test Farm",
+    "business_name": "Advanced Test Farm",
     "business_type": "farm",
     "address": "789 Farm Road",
     "city": "Austin",

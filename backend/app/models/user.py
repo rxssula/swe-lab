@@ -60,7 +60,7 @@ class Supplier(Base):
     __tablename__ = "suppliers"
 
     id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    company_name: Mapped[str] = mapped_column(String, nullable=False)
+    business_name: Mapped[str] = mapped_column(String, nullable=False)
     business_type: Mapped[str] = mapped_column(String)
     address: Mapped[str] = mapped_column(String)
     city: Mapped[str] = mapped_column(String)

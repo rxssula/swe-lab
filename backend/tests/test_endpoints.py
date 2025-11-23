@@ -122,7 +122,7 @@ if response:
 
 # Test 1.2: Supplier Signup
 supplier_data = {
-    "company_name": "Test Farm",
+    "business_name": "Test Farm",
     "business_type": "farm",
     "address": "456 Farm Road",
     "city": "Austin",

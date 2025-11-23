@@ -104,7 +104,7 @@ def signup_supplier(data: SupplierSignup, db: Session = Depends(get_db)):
         db.flush()
 
         supplier = Supplier(
-            company_name=data.company_name,
+            business_name=data.business_name,
             business_type=data.business_type,
             address=data.address,
             city=data.city,

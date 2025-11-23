@@ -172,7 +172,7 @@ def enrich_product_response(db: Session, product: Product) -> ProductResponse:
         stock_level=product.stock_level,
         minimum_order_quantity=product.minimum_order_quantity,
         is_active=product.is_active,
-        supplier_name=supplier.company_name if supplier else None,
+        supplier_name=supplier.business_name if supplier else None,
         category_name=category.name if category else None,
         images=[ProductImageResponse.model_validate(img) for img in images]
     )
@@ -546,7 +546,7 @@ def browse_catalog(
             minimum_order_quantity=product.minimum_order_quantity,
             is_active=product.is_active,
             supplier_id=product.supplier_id,
-            supplier_name=supplier.company_name if supplier else "Unknown",
+            supplier_name=supplier.business_name if supplier else "Unknown",
             category_name=category.name if category else None,
             images=[ProductImageResponse.model_validate(img) for img in images]
         ))
@@ -588,7 +588,7 @@ def get_linked_suppliers_with_products(
 
         result.append({
             "supplier_id": supplier.id,
-            "supplier_name": supplier.company_name,
+            "supplier_name": supplier.business_name,
             "business_type": supplier.business_type,
             "city": supplier.city,
             "country": supplier.country,

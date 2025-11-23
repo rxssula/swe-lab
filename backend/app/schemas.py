@@ -45,7 +45,7 @@ class ConsumerSignup(BaseModel):
 class SupplierSignup(BaseModel):
     """Schema for supplier (farmer/producer) signup"""
     """Schema for supplier (farmer/producer) signup"""
-    company_name: str
+    business_name: str
     business_type: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
@@ -107,7 +107,7 @@ class ConsumerStaffRead(ConsumerStaffBase):
 
 
 class SupplierBase(BaseModel):
-    company_name: str
+    business_name: str
     business_type: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None

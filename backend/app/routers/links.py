@@ -145,7 +145,7 @@ def request_link_to_supplier(
             requested_at=existing_link.requested_at,
             responded_at=existing_link.responded_at,
             responded_by=existing_link.responded_by,
-            supplier_name=supplier.company_name,
+            supplier_name=supplier.business_name,
             consumer_name=consumer.business_name
         )
 
@@ -167,7 +167,7 @@ def request_link_to_supplier(
         requested_at=link.requested_at,
         responded_at=link.responded_at,
         responded_by=link.responded_by,
-        supplier_name=supplier.company_name,
+        supplier_name=supplier.business_name,
         consumer_name=consumer.business_name
     )
 
@@ -216,7 +216,7 @@ def get_my_links(
             requested_at=link.requested_at,
             responded_at=link.responded_at,
             responded_by=link.responded_by,
-            supplier_name=supplier.company_name if supplier else None,
+            supplier_name=supplier.business_name if supplier else None,
             consumer_name=consumer.business_name
         ))
 
@@ -269,7 +269,7 @@ def get_link_requests(
             requested_at=link.requested_at,
             responded_at=link.responded_at,
             responded_by=link.responded_by,
-            supplier_name=supplier.company_name,
+            supplier_name=supplier.business_name,
             consumer_name=consumer.business_name if consumer else None
         ))
 
@@ -328,7 +328,7 @@ def accept_link_request(
         requested_at=link.requested_at,
         responded_at=link.responded_at,
         responded_by=link.responded_by,
-        supplier_name=supplier.company_name if supplier else None,
+        supplier_name=supplier.business_name if supplier else None,
         consumer_name=consumer.business_name if consumer else None
     )
 
@@ -385,7 +385,7 @@ def reject_link_request(
         requested_at=link.requested_at,
         responded_at=link.responded_at,
         responded_by=link.responded_by,
-        supplier_name=supplier.company_name if supplier else None,
+        supplier_name=supplier.business_name if supplier else None,
         consumer_name=consumer.business_name if consumer else None
     )
 

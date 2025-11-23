@@ -27,7 +27,7 @@ class StaffInviteRequest(BaseModel):
 
 class SupplierByCategoryResponse(BaseModel):
     supplier_id: UUID
-    company_name: str
+    business_name: str
     business_type: str | None
     city: str | None
     country: str | None
@@ -192,7 +192,7 @@ def get_suppliers_by_category(
 
         result.append(SupplierByCategoryResponse(
             supplier_id=supplier.id,
-            company_name=supplier.company_name,
+            business_name=supplier.business_name,
             business_type=supplier.business_type,
             city=supplier.city,
             country=supplier.country,
