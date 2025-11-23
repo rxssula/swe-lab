@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
@@ -23,6 +25,68 @@ class UserRead(UserBase):
     id: UUID
     created_at: datetime
     last_login_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ManagerInfo(BaseModel):
+    """Information about a manager/owner"""
+    id: UUID
+    email: str
+    phone_number: Optional[str] = None
+    role: str
+
+    class Config:
+        from_attributes = True
+
+
+class ConsumerAssociation(BaseModel):
+    """Consumer company association with user role and manager info"""
+    consumer: ConsumerRead
+    role: str
+    manager: Optional[ManagerInfo] = None
+
+    class Config:
+        from_attributes = True
+
+
+class SupplierAssociation(BaseModel):
+    """Supplier company association with user role and manager info"""
+    supplier: SupplierRead
+    role: str
+    manager: Optional[ManagerInfo] = None
+
+    class Config:
+        from_attributes = True
+
+
+class UserMeResponse(UserBase):
+    """Enhanced user profile response including company associations"""
+    id: UUID
+    created_at: datetime
+    last_login_at: Optional[datetime] = None
+    consumer_associations: List[ConsumerAssociation] = []
+    supplier_associations: List[SupplierAssociation] = []
+
+    class Config:
+        from_attributes = True
+
+
+class StaffCreateRequest(BaseModel):
+    """Request to create a new staff member directly"""
+    email: EmailStr
+    password: str
+    role: str
+    phone_number: Optional[str] = None
+
+
+class StaffCreateResponse(BaseModel):
+    """Response after creating a staff member"""
+    user: UserRead
+    role: str
+    consumer_id: Optional[UUID] = None
+    supplier_id: Optional[UUID] = None
 
     class Config:
         from_attributes = True

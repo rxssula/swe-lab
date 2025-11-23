@@ -8,10 +8,9 @@ from sqlalchemy.orm import Session
 from app.auth.auth import get_current_user
 from app.core.db import get_db
 from app.models.user import (
-    User, Consumer, Supplier, ConsumerStaff, SupplierStaff,
-    StaffInvitation
+    User, Consumer, Supplier, ConsumerStaff, SupplierStaff
 )
-from app.models.enums import ConsumerRole, SupplierRole, InvitationStatus
+from app.models.enums import ConsumerRole, SupplierRole
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/staff", tags=["staff"])
@@ -26,19 +25,6 @@ class StaffMemberResponse(BaseModel):
     phone_number: str | None
     created_at: datetime
     last_login_at: datetime | None
-
-    class Config:
-        from_attributes = True
-
-
-class InvitationResponse(BaseModel):
-    id: UUID
-    email: str
-    role: str
-    status: str
-    created_at: datetime
-    expires_at: datetime
-    accepted_at: datetime | None
 
     class Config:
         from_attributes = True
@@ -223,51 +209,6 @@ def update_supplier_staff_role(
     )
 
 
-@router.get("/supplier/invitations", response_model=List[InvitationResponse])
-def list_supplier_invitations(
-    status_filter: str | None = None,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    List all pending invitations for the supplier.
-    All supplier staff can view invitations.
-    """
-    staff_record = get_supplier_staff(db, current_user)
-    if not staff_record:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only supplier staff can view invitations"
-        )
-
-    query = db.query(StaffInvitation).filter(
-        StaffInvitation.supplier_id == staff_record.supplier_id
-    )
-
-    if status_filter:
-        try:
-            status_enum = InvitationStatus(status_filter.lower())
-            query = query.filter(StaffInvitation.status == status_enum.value)
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid status. Must be one of: {[s.value for s in InvitationStatus]}"
-            )
-
-    invitations = query.all()
-
-    return [InvitationResponse(
-        id=inv.id,
-        email=inv.email,
-        role=inv.role,
-        status=inv.status,
-        created_at=inv.created_at,
-        expires_at=inv.expires_at,
-        accepted_at=inv.accepted_at
-    ) for inv in invitations]
-
-
-
 @router.get("/consumer/list", response_model=List[StaffMemberResponse])
 def list_consumer_staff(
     db: Session = Depends(get_db),
@@ -423,47 +364,3 @@ def update_consumer_staff_role(
         created_at=user.created_at,
         last_login_at=user.last_login_at
     )
-
-
-@router.get("/consumer/invitations", response_model=List[InvitationResponse])
-def list_consumer_invitations(
-    status_filter: str | None = None,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    List all pending invitations for the consumer.
-    All consumer staff can view invitations.
-    """
-    staff_record = get_consumer_staff(db, current_user)
-    if not staff_record:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only consumer staff can view invitations"
-        )
-
-    query = db.query(StaffInvitation).filter(
-        StaffInvitation.consumer_id == staff_record.consumer_id
-    )
-
-    if status_filter:
-        try:
-            status_enum = InvitationStatus(status_filter.lower())
-            query = query.filter(StaffInvitation.status == status_enum.value)
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid status. Must be one of: {[s.value for s in InvitationStatus]}"
-            )
-
-    invitations = query.all()
-
-    return [InvitationResponse(
-        id=inv.id,
-        email=inv.email,
-        role=inv.role,
-        status=inv.status,
-        created_at=inv.created_at,
-        expires_at=inv.expires_at,
-        accepted_at=inv.accepted_at
-    ) for inv in invitations]

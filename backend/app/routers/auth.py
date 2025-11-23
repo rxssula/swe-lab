@@ -5,15 +5,16 @@ from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy import case
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from app.auth.auth import create_access_token, authenticate_user, get_current_user, get_password_hash
 from app.core.db import get_db
 from app.models import User
-from app.models.user import Consumer, ConsumerStaff, Supplier, SupplierStaff, Subscription, StaffInvitation
+from app.models.user import Consumer, ConsumerStaff, Supplier, SupplierStaff, Subscription
 from app.models.enums import ConsumerRole, SupplierRole
-from app.schemas import ConsumerSignup, SupplierSignup, SignupResponse, UserRead
+from app.schemas import ConsumerSignup, SupplierSignup, SignupResponse, UserRead, UserMeResponse, ConsumerAssociation, SupplierAssociation, ManagerInfo, ConsumerRead, SupplierRead
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -219,87 +220,105 @@ async def login_for_access_token(
 
 
 
-@router.get("/me", response_model=UserRead)
+@router.get("/me", response_model=UserMeResponse)
 async def read_users_me(
     current_user: Annotated[UserRead, Depends(get_current_user)],
+    db: Session = Depends(get_db),
 ):
-    return current_user
+    """
+    Get current user information including all company associations and manager details.
+    For staff/sales users, includes information about their managers (owners/admins).
+    """
+    # Fetch the full user from database
+    user = db.query(User).filter(User.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
+    consumer_associations = []
+    supplier_associations = []
 
-@router.post("/accept-invitation")
-def accept_invitation(
-        token: str,
-        password: str,
-        phone_number: Optional[str] = None,
-        db: Session = Depends(get_db)
-):
-    """Staff member accepts invitation and creates account"""
-    """Staff member accepts invitation and creates account"""
+    # Get all consumer associations
+    consumer_staff_records = db.query(ConsumerStaff).filter(
+        ConsumerStaff.user_id == user.id
+    ).all()
 
-    invitation = db.query(StaffInvitation).filter(
-        StaffInvitation.token == token,
-        StaffInvitation.status == "PENDING"
-    ).first()
-    if not invitation:
-        raise HTTPException(status_code=404, detail="Invalid or expired invitation")
-    if invitation.expires_at < datetime.now():
-        invitation.status = "expired"
-        db.commit()
-        raise HTTPException(status_code=400, detail="Invitation has expired")
+    for cs in consumer_staff_records:
+        # Get the consumer company
+        consumer = db.query(Consumer).filter(Consumer.id == cs.consumer_id).first()
+        if not consumer:
+            continue
 
-    existing_user = db.query(User).filter(User.email == invitation.email).first()
-    if existing_user:
-        raise HTTPException(status_code=400, detail="User already exists")
+        # Find manager (owner or manager role) for this consumer
+        manager_staff = db.query(ConsumerStaff).join(User).filter(
+            ConsumerStaff.consumer_id == cs.consumer_id,
+            ConsumerStaff.role.in_(['owner', 'manager']),
+            ConsumerStaff.user_id != user.id  # Exclude current user
+        ).order_by(
+            # Prioritize owner over manager
+            case((ConsumerStaff.role == 'owner', 0), else_=1)
+        ).first()
 
-    try:
-        user = User(
-            email=str(invitation.email),
-            password_hash=get_password_hash(password),
-            phone_number=phone_number,
-            created_at=datetime.now(),
-            last_login_at=datetime.now(),
-        )
-        db.add(user)
-        db.flush()
-        user_type = ""
-        if invitation.consumer_id:
-            consumer_staff = ConsumerStaff(
-                user_id=user.id,
-                consumer_id=uuid.UUID(str(invitation.consumer_id)),
-                role=str(invitation.role)
-            )
-            db.add(consumer_staff)
-            user_type = "consumer"
+        manager_info = None
+        if manager_staff:
+            manager_user = db.query(User).filter(User.id == manager_staff.user_id).first()
+            if manager_user:
+                manager_info = ManagerInfo(
+                    id=manager_user.id,
+                    email=manager_user.email,
+                    phone_number=manager_user.phone_number,
+                    role=manager_staff.role
+                )
 
-        elif invitation.supplier_id:
-            supplier_staff = SupplierStaff(
-                user_id=user.id,
-                supplier_id=uuid.UUID(str(invitation.supplier_id)),
-                role=str(invitation.role)
-            )
-            db.add(supplier_staff)
-            user_type = "supplier"
+        consumer_associations.append(ConsumerAssociation(
+            consumer=ConsumerRead.model_validate(consumer),
+            role=cs.role,
+            manager=manager_info
+        ))
 
-        invitation.status = "ACCEPTED"
-        invitation.accepted_at = datetime.now()
+    # Get all supplier associations
+    supplier_staff_records = db.query(SupplierStaff).filter(
+        SupplierStaff.user_id == user.id
+    ).all()
 
-        db.commit()
-        db.refresh(user)
+    for ss in supplier_staff_records:
+        # Get the supplier company
+        supplier = db.query(Supplier).filter(Supplier.id == ss.supplier_id).first()
+        if not supplier:
+            continue
 
-        access_token = create_access_token(
-            data={"sub": str(user.id)},
-            user_type=user_type,
-            role=str(invitation.role)
-        )
+        # Find manager (owner or admin role) for this supplier
+        manager_staff = db.query(SupplierStaff).join(User).filter(
+            SupplierStaff.supplier_id == ss.supplier_id,
+            SupplierStaff.role.in_(['OWNER', 'ADMIN']),
+            SupplierStaff.user_id != user.id  # Exclude current user
+        ).order_by(
+            # Prioritize owner over admin
+            case((SupplierStaff.role == 'OWNER', 0), else_=1)
+        ).first()
 
-        return SignupResponse(
-            access_token=access_token.access_token,
-            token_type=access_token.token_type,
-            user=UserRead.model_validate(user),
-            user_type=access_token.user_type,
-            role=access_token.role
-        )
+        manager_info = None
+        if manager_staff:
+            manager_user = db.query(User).filter(User.id == manager_staff.user_id).first()
+            if manager_user:
+                manager_info = ManagerInfo(
+                    id=manager_user.id,
+                    email=manager_user.email,
+                    phone_number=manager_user.phone_number,
+                    role=manager_staff.role
+                )
 
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to accept invitation: {str(e)}")
+        supplier_associations.append(SupplierAssociation(
+            supplier=SupplierRead.model_validate(supplier),
+            role=ss.role,
+            manager=manager_info
+        ))
+
+    return UserMeResponse(
+        id=user.id,
+        email=user.email,
+        phone_number=user.phone_number,
+        created_at=user.created_at,
+        last_login_at=user.last_login_at,
+        consumer_associations=consumer_associations,
+        supplier_associations=supplier_associations
+    )
