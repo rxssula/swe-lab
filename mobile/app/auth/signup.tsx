@@ -36,7 +36,7 @@ export default function Signup() {
             const endpoint = `${base}/${role}`;
 
             const payload: Record<string, any> = {
-                full_name: fullName, // <-- NEW FIELD
+                name: fullName, // <-- NEW FIELD
                 business_name: businessName,
                 business_type: businessType,
                 address,
@@ -128,7 +128,6 @@ export default function Signup() {
 
                 <View className="space-y-4">
 
-                    {/* NEW NAME FIELD */}
                     <View>
                         <Text className="text-sm font-medium text-gray-700 mb-2">
                             Name and Surname *
