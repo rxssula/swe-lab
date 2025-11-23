@@ -235,7 +235,6 @@ function SupplierDashboard({ token }) {
    =================== CONSUMER DASHBOARD ======================
    ============================================================ */
 
-// Keep your existing ConsumerDashboard function as-is
 function ConsumerDashboard({ token }) {
     const router = useRouter();
 
@@ -346,13 +345,24 @@ function ConsumerDashboard({ token }) {
     return (
         <SafeAreaView style={styles.safe}>
             <View style={{ padding: 16 }}>
+
+                {/* Header with Refresh & Cart */}
                 <View style={styles.headerRow}>
                     <Text style={styles.headerTitle}>Companies</Text>
-                    <TouchableOpacity onPress={fetchCompanies}>
-                        <Ionicons name="refresh-outline" size={24} color="#111" />
-                    </TouchableOpacity>
+
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        <TouchableOpacity onPress={fetchCompanies} style={{ marginRight: 18 }}>
+                            <Ionicons name="refresh-outline" size={24} color="#111" />
+                        </TouchableOpacity>
+
+                        {/* CART ICON */}
+                        <TouchableOpacity onPress={() => router.push("/components/cart")}>
+                            <Ionicons name="cart-outline" size={26} color="#111" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
+                {/* Search + Cart is moved above, search remains full width */}
                 <TextInput
                     value={query}
                     onChangeText={setQuery}
@@ -413,6 +423,7 @@ function ConsumerDashboard({ token }) {
         </SafeAreaView>
     );
 }
+
 
 /* ============================================================
    ========================== STYLES ===========================
