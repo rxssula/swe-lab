@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
 import { Separator } from '@/components/ui/separator'
+import { ModeToggle } from '@/components/mode-toggle'
 import { getCurrentUser } from '@/lib/api/auth'
 
 /**
@@ -132,6 +133,9 @@ function DashboardLayout() {
             <h1 className="text-lg font-semibold">
               {userType === 'supplier' ? 'Supplier' : 'Consumer'} Dashboard
             </h1>
+          </div>
+          <div className="ml-auto">
+            <ModeToggle />
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4">
