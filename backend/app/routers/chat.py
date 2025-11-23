@@ -211,27 +211,25 @@ def get_chat_threads(
 
     threads = []
     for link in links:
-        thread = db.query(ChatThread).filter(
-            ChatThread.link_id == link.id
-        ).first()
+        # Get or create thread for each accepted link
+        thread = get_or_create_thread(db, link.id)
 
-        if thread:
-            # Calculate unread messages
-            unread_count = db.query(ChatMessage).filter(
-                ChatMessage.thread_id == thread.id,
-                ChatMessage.sender_id != current_user.id,
-                ChatMessage.read_at.is_(None)
-            ).count()
+        # Calculate unread messages
+        unread_count = db.query(ChatMessage).filter(
+            ChatMessage.thread_id == thread.id,
+            ChatMessage.sender_id != current_user.id,
+            ChatMessage.read_at.is_(None)
+        ).count()
 
-            threads.append(ThreadResponse(
-                id=thread.id,
-                link_id=link.id,
-                consumer_id=link.consumer_id,
-                supplier_id=link.supplier_id,
-                created_at=thread.created_at,
-                last_message_at=thread.last_message_at,
-                unread_count=unread_count
-            ))
+        threads.append(ThreadResponse(
+            id=thread.id,
+            link_id=link.id,
+            consumer_id=link.consumer_id,
+            supplier_id=link.supplier_id,
+            created_at=thread.created_at,
+            last_message_at=thread.last_message_at,
+            unread_count=unread_count
+        ))
 
     return threads
 
@@ -1104,7 +1102,6 @@ async def websocket_endpoint(
 
         # Get sender type
         sender_type = "CONSUMER" if consumer else "SUPPLIER"
-        sender_id = consumer.id if consumer else supplier.id
 
         # Connect to WebSocket manager
         await manager.connect(websocket, link_id, user_id, db)
@@ -1158,7 +1155,7 @@ async def websocket_endpoint(
                     new_message = ChatMessage(
                         id=uuid4(),
                         thread_id=thread.id,
-                        sender_id=sender_id,
+                        sender_id=user_id,  # Use user_id (current_user.id) not consumer/supplier id
                         sender_type=sender_type,
                         message_text=message_text,
                         message_type=message_type_value,
