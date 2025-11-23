@@ -1,4 +1,4 @@
-import { getApiUrl, defaultHeaders } from './config'
+import { defaultHeaders, getApiUrl } from './config'
 
 export type IncidentStatus = 'open' | 'in_progress' | 'resolved'
 
@@ -32,7 +32,7 @@ export interface IncidentDetail {
   resolved_at: string | null
   consumer_name: string | null
   supplier_name: string | null
-  logs: IncidentLog[]
+  logs: Array<IncidentLog>
 }
 
 export interface IncidentSummary {
@@ -112,7 +112,7 @@ export async function createIncident(
 
 export async function getMyComplaints(
   statusFilter?: IncidentStatus,
-): Promise<IncidentSummary[]> {
+): Promise<Array<IncidentSummary>> {
   const params = new URLSearchParams()
   if (statusFilter) params.append('status_filter', statusFilter)
 
@@ -141,7 +141,7 @@ export async function getMyComplaints(
 // Supplier endpoints
 export async function getMyAssignedIncidents(
   statusFilter?: IncidentStatus,
-): Promise<IncidentSummary[]> {
+): Promise<Array<IncidentSummary>> {
   const params = new URLSearchParams()
   if (statusFilter) params.append('status_filter', statusFilter)
 
@@ -170,7 +170,7 @@ export async function getMyAssignedIncidents(
 
 export async function getSupplierIncidents(
   statusFilter?: IncidentStatus,
-): Promise<IncidentSummary[]> {
+): Promise<Array<IncidentSummary>> {
   const params = new URLSearchParams()
   if (statusFilter) params.append('status_filter', statusFilter)
 

@@ -1,4 +1,4 @@
-import { getApiUrl, defaultHeaders } from './config'
+import { defaultHeaders, getApiUrl } from './config'
 
 export interface StaffMember {
   id: string
@@ -64,7 +64,7 @@ function getAuthToken(): string {
 /**
  * List all staff members for the current supplier
  */
-export async function listSupplierStaff(): Promise<StaffMember[]> {
+export async function listSupplierStaff(): Promise<Array<StaffMember>> {
   const response = await fetch(getApiUrl('staff/supplier/list'), {
     method: 'GET',
     headers: {

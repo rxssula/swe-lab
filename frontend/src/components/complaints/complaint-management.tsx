@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  Search,
   AlertCircle,
-  Eye,
-  Plus,
-  MessageSquare,
-  CheckCircle2,
   ArrowUp,
+  CheckCircle2,
+  Eye,
+  MessageSquare,
+  Plus,
+  Search,
 } from 'lucide-react'
+import type {IncidentDetail, IncidentStatus, IncidentSummary} from '@/lib/api/incidents';
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -35,17 +36,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  getMyComplaints,
-  getMyAssignedIncidents,
-  getSupplierIncidents,
-  getIncidentDetail,
+  
+  
+  
   addIncidentLog,
-  escalateIncident,
-  resolveIncident,
   createIncident,
-  type IncidentSummary,
-  type IncidentDetail,
-  type IncidentStatus,
+  escalateIncident,
+  getIncidentDetail,
+  getMyAssignedIncidents,
+  getMyComplaints,
+  getSupplierIncidents,
+  resolveIncident
 } from '@/lib/api/incidents'
 import { getMyLinks } from '@/lib/api/links'
 import { Textarea } from '@/components/ui/textarea'

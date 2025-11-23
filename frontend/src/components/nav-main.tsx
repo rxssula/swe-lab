@@ -1,4 +1,5 @@
-import { ChevronRight, type LucideIcon } from "lucide-react"
+import { ChevronRight  } from "lucide-react"
+import type {LucideIcon} from "lucide-react";
 
 import {
   Collapsible,
@@ -19,16 +20,16 @@ import {
 export function NavMain({
   items,
 }: {
-  items: {
+  items: Array<{
     title: string
     url: string
     icon?: LucideIcon
     isActive?: boolean
-    items?: {
+    items?: Array<{
       title: string
       url: string
-    }[]
-  }[]
+    }>
+  }>
 }) {
   return (
     <SidebarGroup>

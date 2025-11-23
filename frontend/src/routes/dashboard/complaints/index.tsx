@@ -6,6 +6,6 @@ export const Route = createFileRoute('/dashboard/complaints/')({
 })
 
 function ComplaintsPage() {
-  const userType = localStorage.getItem('user_type') as 'supplier' | 'consumer'
-  return <ComplaintManagement userType={userType || 'consumer'} />
+  const userType = localStorage.getItem('user_type') as 'supplier' | 'consumer' | null
+  return <ComplaintManagement userType={userType ?? 'consumer'} />
 }

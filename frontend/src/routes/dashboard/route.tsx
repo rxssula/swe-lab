@@ -1,10 +1,14 @@
-import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
+import {
+  Outlet,
+  createFileRoute,
+  redirect,
+  useNavigate,
+} from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect } from 'react'
-import { useNavigate } from '@tanstack/react-router'
 import {
-  SidebarProvider,
   SidebarInset,
+  SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -43,7 +47,7 @@ function isValidToken(token: string): boolean {
 
 export const Route = createFileRoute('/dashboard')({
   component: DashboardLayout,
-  beforeLoad: async ({ location }) => {
+  beforeLoad: ({ location }) => {
     const token = localStorage.getItem('access_token')
     if (!token) {
       throw redirect({

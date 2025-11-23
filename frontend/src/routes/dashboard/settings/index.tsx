@@ -8,7 +8,7 @@ export const Route = createFileRoute('/dashboard/settings/')({
 
 function SettingsPage() {
   const userType = localStorage.getItem('user_type') as 'supplier' | 'consumer'
-  const userRole = localStorage.getItem('role') as string | null
+  const userRole = localStorage.getItem('role')
 
   const isOwner = userType === 'supplier' && userRole === 'OWNER'
 

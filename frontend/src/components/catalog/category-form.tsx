@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useMutation } from '@tanstack/react-query'
+import type { Category } from '@/lib/api/categories'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -20,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { createCategory, type Category } from '@/lib/api/categories'
+import { createCategory } from '@/lib/api/categories'
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Category name is required'),
@@ -31,7 +32,7 @@ const categorySchema = z.object({
 type CategoryFormValues = z.infer<typeof categorySchema>
 
 interface CategoryFormProps {
-  categories: Category[]
+  categories: Array<Category>
   onSuccess: () => void
 }
 
@@ -53,7 +54,7 @@ export function CategoryForm({ categories, onSuccess }: CategoryFormProps) {
     },
   })
 
-  const onSubmit = async (data: CategoryFormValues) => {
+  const onSubmit = (data: CategoryFormValues) => {
     const apiData = {
       name: data.name,
       description: data.description || null,

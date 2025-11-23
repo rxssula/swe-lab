@@ -1,4 +1,4 @@
-import { getApiUrl, defaultHeaders } from './config'
+import { defaultHeaders, getApiUrl } from './config'
 
 export interface Category {
   id: string
@@ -31,7 +31,7 @@ function getAuthHeaders() {
   }
 }
 
-export async function getCategories(parentId?: string): Promise<Category[]> {
+export async function getCategories(parentId?: string): Promise<Array<Category>> {
   const params = new URLSearchParams()
   if (parentId) params.append('parent_id', parentId)
 

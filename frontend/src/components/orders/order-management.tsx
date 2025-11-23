@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  Search,
   CheckCircle2,
-  XCircle,
-  Package,
   Eye,
-  X,
+  Package,
   RotateCcw,
+  Search,
+  X,
+  XCircle,
 } from 'lucide-react'
+import type {Order, OrderStatus} from '@/lib/api/orders';
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -35,15 +36,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  getIncomingOrders,
-  getConsumerOrderHistory,
+  
+  
   acceptOrder,
-  rejectOrder,
-  completeOrder,
   cancelOrder,
+  completeOrder,
+  getConsumerOrderHistory,
+  getIncomingOrders,
   getOrderDetails,
-  type Order,
-  type OrderStatus,
+  rejectOrder
 } from '@/lib/api/orders'
 import { formatCurrency } from '@/lib/utils'
 import { Textarea } from '@/components/ui/textarea'

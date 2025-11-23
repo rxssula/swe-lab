@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { login, type LoginRequest, type SignupResponse } from '../api/auth'
+import { login } from '../api/auth'
+import type { LoginRequest, SignupResponse } from '../api/auth'
 
 export function useLogin() {
   const navigate = useNavigate()
@@ -17,7 +18,7 @@ export function useLogin() {
       if (data.supplier_id) {
         localStorage.setItem('supplier_id', data.supplier_id)
       }
-      if (data.user?.id) {
+      if (data.user.id) {
         localStorage.setItem('user_id', data.user.id)
       }
 

@@ -1,12 +1,13 @@
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import {
+  
+  
+  
   signupConsumer,
-  signupSupplier,
-  type ConsumerSignupRequest,
-  type SupplierSignupRequest,
-  type SignupResponse,
+  signupSupplier
 } from '../api/auth'
+import type {ConsumerSignupRequest, SignupResponse, SupplierSignupRequest} from '../api/auth';
 
 export function useConsumerSignup() {
   const navigate = useNavigate()
@@ -23,7 +24,7 @@ export function useConsumerSignup() {
       if (data.supplier_id) {
         localStorage.setItem('supplier_id', data.supplier_id)
       }
-      if (data.user?.id) {
+      if (data.user.id) {
         localStorage.setItem('user_id', data.user.id)
       }
 
@@ -49,7 +50,7 @@ export function useSupplierSignup() {
       if (data.supplier_id) {
         localStorage.setItem('supplier_id', data.supplier_id)
       }
-      if (data.user?.id) {
+      if (data.user.id) {
         localStorage.setItem('user_id', data.user.id)
       }
 

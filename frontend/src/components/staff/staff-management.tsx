@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  Edit,
-  Trash2,
-  Users,
-  UserPlus,
-  Shield,
-  UserCog,
   Briefcase,
+  Edit,
+  Shield,
+  Trash2,
+  UserCog,
+  UserPlus,
+  Users,
 } from 'lucide-react'
+import type {CreateStaffRequest, StaffMember} from '@/lib/api/staff';
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -36,12 +37,12 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import {
-  listSupplierStaff,
+  
+  
   createSupplierStaff,
-  updateStaffRole,
+  listSupplierStaff,
   removeSupplierStaff,
-  type StaffMember,
-  type CreateStaffRequest,
+  updateStaffRole
 } from '@/lib/api/staff'
 
 function getRoleBadgeVariant(role: string) {
@@ -96,7 +97,7 @@ export function StaffManagement() {
   )
 
   const queryClient = useQueryClient()
-  const userRole = localStorage.getItem('role') as string | null
+  const userRole = localStorage.getItem('role')
   const isOwner = userRole === 'OWNER'
 
   // Fetch staff list
@@ -157,9 +158,9 @@ export function StaffManagement() {
     createMutation.mutate(createForm)
   }
 
-  const handleEdit = (staff: StaffMember) => {
-    setSelectedStaff(staff)
-    setEditRole(staff.role as 'OWNER' | 'MANAGER' | 'SALES')
+  const handleEdit = (staffMember: StaffMember) => {
+    setSelectedStaff(staffMember)
+    setEditRole(staffMember.role as 'OWNER' | 'MANAGER' | 'SALES')
     setIsEditOpen(true)
   }
 
@@ -171,13 +172,13 @@ export function StaffManagement() {
     })
   }
 
-  const handleRemove = (staff: StaffMember) => {
+  const handleRemove = (staffMember: StaffMember) => {
     if (
       confirm(
-        `Are you sure you want to remove ${staff.email}? This action cannot be undone.`,
+        `Are you sure you want to remove ${staffMember.email}? This action cannot be undone.`,
       )
     ) {
-      removeMutation.mutate(staff.id)
+      removeMutation.mutate(staffMember.id)
     }
   }
 

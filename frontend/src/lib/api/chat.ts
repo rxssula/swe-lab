@@ -1,4 +1,4 @@
-import { getApiUrl, defaultHeaders } from './config'
+import { defaultHeaders, getApiUrl } from './config'
 
 export interface ChatAttachment {
   id?: string
@@ -17,7 +17,7 @@ export interface ChatMessage {
   product_id: string | null
   sent_at: string
   read_at: string | null
-  attachments: ChatAttachment[]
+  attachments: Array<ChatAttachment>
 }
 
 export interface ChatThread {
@@ -34,11 +34,11 @@ export interface SendMessageRequest {
   message_text: string
   message_type?: string
   product_id?: string | null
-  attachment_urls?: string[] | null
+  attachment_urls?: Array<string> | null
 }
 
 export interface MarkAsReadRequest {
-  message_ids: string[]
+  message_ids: Array<string>
 }
 
 export interface UserPresence {
@@ -65,7 +65,7 @@ function getAuthHeaders() {
 }
 
 // Get all chat threads for the current user
-export async function getChatThreads(): Promise<ChatThread[]> {
+export async function getChatThreads(): Promise<Array<ChatThread>> {
   const response = await fetch(getApiUrl('chat/threads'), {
     method: 'GET',
     headers: getAuthHeaders(),
@@ -88,7 +88,7 @@ export async function getMessages(
   linkId: string,
   limit: number = 50,
   offset: number = 0,
-): Promise<ChatMessage[]> {
+): Promise<Array<ChatMessage>> {
   const params = new URLSearchParams()
   params.append('limit', limit.toString())
   params.append('offset', offset.toString())
@@ -162,7 +162,7 @@ export async function markMessagesAsRead(
 // Get user presence for a link
 export async function getUserPresence(
   linkId: string,
-): Promise<UserPresence[]> {
+): Promise<Array<UserPresence>> {
   const response = await fetch(getApiUrl(`chat/links/${linkId}/presence`), {
     method: 'GET',
     headers: getAuthHeaders(),
@@ -224,7 +224,7 @@ export async function uploadChatFile(
 export async function sendMessageWithFiles(
   linkId: string,
   messageText: string,
-  files: File[],
+  files: Array<File>,
   messageType: string = 'TEXT',
   productId?: string,
 ): Promise<ChatMessage> {

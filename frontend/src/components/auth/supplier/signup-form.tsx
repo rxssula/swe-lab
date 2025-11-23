@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import { Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -19,7 +20,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Link } from '@tanstack/react-router'
 import { useSupplierSignup } from '@/lib/hooks/use-signup'
 
 const signupSchema = z
@@ -63,7 +63,7 @@ export function SupplierSignupForm({
 
   const signupMutation = useSupplierSignup()
 
-  const onSubmit = async (data: SignupFormValues) => {
+  const onSubmit = (data: SignupFormValues) => {
     const apiData = {
       business_name: data.businessName,
       business_type: data.businessType || undefined,
@@ -256,8 +256,9 @@ export function SupplierSignupForm({
             <div className="mt-6 space-y-4">
               {signupMutation.isError && (
                 <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">
-                  {signupMutation.error?.message ||
-                    'An error occurred during signup'}
+                  {signupMutation.error instanceof Error
+                    ? signupMutation.error.message
+                    : 'An error occurred during signup'}
                 </div>
               )}
               <Button

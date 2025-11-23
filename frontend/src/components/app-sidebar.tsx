@@ -2,13 +2,13 @@
 
 import * as React from 'react'
 import {
-  Package,
-  ShoppingCart,
   AlertCircle,
   Link as LinkIcon,
-  MessageSquare,
-  Settings,
   LogOut,
+  MessageSquare,
+  Package,
+  Settings,
+  ShoppingCart,
 } from 'lucide-react'
 import { Link, useMatchRoute } from '@tanstack/react-router'
 
@@ -17,13 +17,13 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarHeader,
-  SidebarRail,
   SidebarGroup,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
 } from '@/components/ui/sidebar'
 
 type UserType = 'supplier' | 'consumer'

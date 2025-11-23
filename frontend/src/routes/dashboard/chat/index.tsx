@@ -6,7 +6,7 @@ export const Route = createFileRoute('/dashboard/chat/')({
 })
 
 function ChatPage() {
-  const userType = localStorage.getItem('user_type') as 'supplier' | 'consumer'
-  return <ChatManagement userType={userType || 'consumer'} />
+  const userType = localStorage.getItem('user_type') as 'supplier' | 'consumer' | null
+  return <ChatManagement userType={userType ?? 'consumer'} />
 }
 

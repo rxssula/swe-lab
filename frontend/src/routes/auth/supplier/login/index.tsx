@@ -1,5 +1,5 @@
-import { SupplierLoginForm } from '@/components/auth/supplier/login-form'
 import { createFileRoute } from '@tanstack/react-router'
+import { SupplierLoginForm } from '@/components/auth/supplier/login-form'
 
 export const Route = createFileRoute('/auth/supplier/login/')({
   component: RouteComponent,

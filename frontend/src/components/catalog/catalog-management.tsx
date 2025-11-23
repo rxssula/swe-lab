@@ -1,6 +1,9 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Plus, Edit, Trash2, Package } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Edit, Package, Plus, Search, Trash2 } from 'lucide-react'
+import { ProductForm } from './product-form'
+import { CategoryForm } from './category-form'
+import type { Product } from '@/lib/api/products'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -29,9 +32,6 @@ import {
 } from '@/components/ui/dialog'
 import { getMyProducts } from '@/lib/api/products'
 import { getCategories } from '@/lib/api/categories'
-import { ProductForm } from './product-form'
-import { CategoryForm } from './category-form'
-import type { Product } from '@/lib/api/products'
 import { formatCurrency } from '@/lib/utils'
 
 export function CatalogManagement() {
@@ -45,7 +45,7 @@ export function CatalogManagement() {
   const queryClient = useQueryClient()
 
   // Get user role from localStorage
-  const userRole = localStorage.getItem('role') as string | null
+  const userRole = localStorage.getItem('role')
   const canManageCatalog = userRole === 'OWNER' || userRole === 'MANAGER'
 
   // Fetch products

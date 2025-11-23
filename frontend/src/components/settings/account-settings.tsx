@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type {UserUpdateRequest} from '@/lib/api/auth';
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -20,7 +21,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { getCurrentUser, updateUser, type UserUpdateRequest } from '@/lib/api/auth'
+import {  getCurrentUser, updateUser } from '@/lib/api/auth'
 
 const accountSchema = z.object({
   email: z.string().email('Please enter a valid email address').optional().or(z.literal('')),
@@ -99,7 +100,7 @@ export function AccountSettings() {
     },
   })
 
-  const onSubmit = async (data: AccountFormValues) => {
+  const onSubmit = (data: AccountFormValues) => {
     const updateData: UserUpdateRequest = {}
     
     // Only include fields that have been changed

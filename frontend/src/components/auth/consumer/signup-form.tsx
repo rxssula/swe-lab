@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import { Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -19,7 +20,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Link } from '@tanstack/react-router'
 import { useConsumerSignup } from '@/lib/hooks/use-signup'
 
 const signupSchema = z
@@ -63,7 +63,7 @@ export function ConsumerSignupForm({
 
   const signupMutation = useConsumerSignup()
 
-  const onSubmit = async (data: SignupFormValues) => {
+  const onSubmit = (data: SignupFormValues) => {
     const apiData = {
       business_name: data.businessName,
       business_type: data.businessType || undefined,
@@ -98,11 +98,7 @@ export function ConsumerSignupForm({
                   <FormItem className="md:col-span-2">
                     <FormLabel>Your Name</FormLabel>
                     <FormControl>
-                      <Input
-                        type="text"
-                        placeholder="John Doe"
-                        {...field}
-                      />
+                      <Input type="text" placeholder="John Doe" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -259,8 +255,9 @@ export function ConsumerSignupForm({
             <div className="mt-6 space-y-4">
               {signupMutation.isError && (
                 <div className="rounded-md bg-red-50 p-4 text-sm text-red-800">
-                  {signupMutation.error?.message ||
-                    'An error occurred during signup'}
+                  {signupMutation.error instanceof Error
+                    ? signupMutation.error.message
+                    : 'An error occurred during signup'}
                 </div>
               )}
               <Button

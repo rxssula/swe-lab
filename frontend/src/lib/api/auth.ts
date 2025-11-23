@@ -1,4 +1,4 @@
-import { getApiUrl, defaultHeaders } from './config'
+import { defaultHeaders, getApiUrl } from './config'
 
 export interface ConsumerSignupRequest {
   business_name: string

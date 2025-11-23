@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, Link as LinkIcon, CheckCircle2, Clock, XCircle } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { CheckCircle2, Clock, Link as LinkIcon, Package, Search, Store, XCircle  } from 'lucide-react'
+import type {Link} from '@/lib/api/links';
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -22,12 +23,11 @@ import { Badge } from '@/components/ui/badge'
 import { getCategories } from '@/lib/api/categories'
 import { getSuppliersByCategory } from '@/lib/api/suppliers'
 import {
-  requestLinkToSupplier,
+  
   checkLinkStatus,
   getMyLinks,
-  type Link,
+  requestLinkToSupplier
 } from '@/lib/api/links'
-import { Store, Package } from 'lucide-react'
 
 export function FindSuppliers() {
   const [selectedCategory, setSelectedCategory] = useState<string>('')

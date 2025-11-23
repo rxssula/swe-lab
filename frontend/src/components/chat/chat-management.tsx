@@ -1,14 +1,16 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  MessageSquare,
-  Send,
-  Paperclip,
-  Loader2,
-  Circle,
   Check,
   CheckCheck,
+  Circle,
+  Loader2,
+  MessageSquare,
+  Paperclip,
+  Send,
 } from 'lucide-react'
+import type {ChatMessage, ChatThread, UserPresence} from '@/lib/api/chat';
+import type {Link} from '@/lib/api/links';
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -20,19 +22,19 @@ import {
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
+  
+  
+  
   getChatThreads,
   getMessages,
-  sendMessage,
-  markMessagesAsRead,
   getUserPresence,
-  sendMessageWithFiles,
   getWebSocketUrl,
-  type ChatThread,
-  type ChatMessage,
-  type UserPresence,
+  markMessagesAsRead,
+  sendMessage,
+  sendMessageWithFiles
 } from '@/lib/api/chat'
 import { getCurrentUser } from '@/lib/api/auth'
-import { getMyLinks, getLinkRequests, type Link } from '@/lib/api/links'
+import {  getLinkRequests, getMyLinks } from '@/lib/api/links'
 
 // Simple date formatting function
 function formatDistanceToNow(date: Date | string): string {
@@ -64,7 +66,7 @@ export function ChatManagement({ userType }: ChatManagementProps) {
   const [_, setIsTyping] = useState(false)
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set())
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [selectedFiles, setSelectedFiles] = useState<Array<File>>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const wsRef = useRef<WebSocket | null>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -119,11 +121,12 @@ export function ChatManagement({ userType }: ChatManagementProps) {
     setOnlineUsers((prev) => {
       if (prev.size === online.size) {
         let isSame = true
-        prev.forEach((id) => {
+        for (const id of prev) {
           if (!online.has(id)) {
             isSame = false
+            break
           }
-        })
+        }
         if (isSame) {
           return prev
         }
@@ -155,9 +158,10 @@ export function ChatManagement({ userType }: ChatManagementProps) {
     ws.onclose = () => {
       console.log('WebSocket disconnected')
       // Attempt to reconnect after 3 seconds
+      const linkId = selectedThread.link_id
       setTimeout(() => {
-        if (selectedThread) {
-          wsRef.current = new WebSocket(getWebSocketUrl(selectedThread.link_id))
+        if (linkId) {
+          wsRef.current = new WebSocket(getWebSocketUrl(linkId))
         }
       }, 3000)
     }
@@ -175,7 +179,7 @@ export function ChatManagement({ userType }: ChatManagementProps) {
         // Add new message to the list
         queryClient.setQueryData(
           ['chatMessages', selectedThread?.link_id],
-          (old: ChatMessage[] = []) => {
+          (old: Array<ChatMessage> = []) => {
             const newMessage = {
               ...data.data,
               sent_at: data.data.sent_at,
@@ -192,7 +196,7 @@ export function ChatManagement({ userType }: ChatManagementProps) {
         )
 
         // Update thread list with new last message
-        queryClient.setQueryData(['chatThreads'], (old: ChatThread[] = []) => {
+        queryClient.setQueryData(['chatThreads'], (old: Array<ChatThread> = []) => {
           return old.map((thread) => {
             if (thread.link_id === selectedThread?.link_id) {
               return {
@@ -221,7 +225,7 @@ export function ChatManagement({ userType }: ChatManagementProps) {
         // Update read status
         queryClient.setQueryData(
           ['chatMessages', selectedThread?.link_id],
-          (old: ChatMessage[] = []) => {
+          (old: Array<ChatMessage> = []) => {
             return old.map((msg) => {
               if (data.data.message_ids.includes(msg.id)) {
                 return { ...msg, read_at: data.data.read_at }
@@ -277,7 +281,7 @@ export function ChatManagement({ userType }: ChatManagementProps) {
     mutationFn: (data: {
       linkId: string
       messageText: string
-      files?: File[]
+      files?: Array<File>
     }) =>
       data.files && data.files.length > 0
         ? sendMessageWithFiles(data.linkId, data.messageText, data.files)
@@ -342,7 +346,7 @@ export function ChatManagement({ userType }: ChatManagementProps) {
   }
 
   const removeFile = (index: number) => {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
+    setSelectedFiles((prev) => prev.filter((_item, i) => i !== index))
   }
 
   // Get the other party's name (supplier or consumer)
@@ -474,8 +478,7 @@ export function ChatManagement({ userType }: ChatManagementProps) {
                           <p className="text-sm whitespace-pre-wrap wrap-break-words">
                             {message.message_text}
                           </p>
-                          {message.attachments &&
-                            message.attachments.length > 0 && (
+                          {message.attachments.length > 0 && (
                               <div className="mt-2 space-y-1">
                                 {message.attachments.map((attachment, idx) => (
                                   <a
