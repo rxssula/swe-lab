@@ -2,19 +2,25 @@ from datetime import datetime
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.auth import get_current_user
 from app.core.db import get_db
 from app.core.storage import save_chat_file, save_audio_file, get_file_url
+from app.core.websocket import manager
 from app.models.user import (
     User, Consumer, Supplier, ConsumerStaff, SupplierStaff,
     ConsumerSupplierLink, ChatThread, ChatMessage, ChatAttachment,
-    CannedReply, Product
+    CannedReply, Product, UserPresence
 )
 from app.models.enums import LinkStatus
 from pydantic import BaseModel
+import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -58,6 +64,16 @@ class ThreadResponse(BaseModel):
 
 class MarkAsReadRequest(BaseModel):
     message_ids: List[UUID]
+
+
+class UserPresenceResponse(BaseModel):
+    user_id: UUID
+    is_online: bool
+    last_seen: datetime
+    connected_at: datetime | None
+
+    class Config:
+        from_attributes = True
 
 
 # Helper Functions
@@ -221,7 +237,7 @@ def get_chat_threads(
 
 
 @router.post("/links/{link_id}/messages", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
-def send_message(
+async def send_message(
     link_id: UUID,
     request: SendMessageRequest,
     db: Session = Depends(get_db),
@@ -304,6 +320,26 @@ def send_message(
 
         db.commit()
 
+    # Broadcast message to WebSocket clients
+    await manager.broadcast_to_link(
+        link_id,
+        {
+            "type": "new_message",
+            "data": {
+                "id": str(message.id),
+                "thread_id": str(message.thread_id),
+                "sender_id": str(message.sender_id),
+                "sender_type": message.sender_type,
+                "message_text": message.message_text,
+                "message_type": message.message_type,
+                "product_id": str(message.product_id) if message.product_id else None,
+                "sent_at": message.sent_at.isoformat(),
+                "read_at": None,
+                "attachments": attachments
+            }
+        }
+    )
+
     return MessageResponse(
         id=message.id,
         thread_id=message.thread_id,
@@ -378,7 +414,7 @@ def get_messages(
 
 
 @router.post("/messages/mark-read", status_code=status.HTTP_200_OK)
-def mark_messages_as_read(
+async def mark_messages_as_read(
     request: MarkAsReadRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -405,6 +441,10 @@ def mark_messages_as_read(
     supplier = get_supplier_for_user(db, current_user)
 
     marked_count = 0
+    marked_message_ids = []
+    link_ids_to_notify = set()
+    read_at = datetime.utcnow()
+
     for message in messages:
         # Validate user has access to this message's thread
         thread = db.query(ChatThread).filter(
@@ -433,15 +473,111 @@ def mark_messages_as_read(
 
         # Only mark as read if user is not the sender and message is not already read
         if message.sender_id != current_user.id and message.read_at is None:
-            message.read_at = datetime.utcnow()
+            message.read_at = read_at
             marked_count += 1
+            marked_message_ids.append(str(message.id))
+            link_ids_to_notify.add(link.id)
 
     db.commit()
+
+    # Broadcast read receipts to WebSocket clients
+    for link_id in link_ids_to_notify:
+        await manager.broadcast_to_link(
+            link_id,
+            {
+                "type": "messages_read",
+                "data": {
+                    "message_ids": marked_message_ids,
+                    "read_by": str(current_user.id),
+                    "read_at": read_at.isoformat()
+                }
+            }
+        )
 
     return {
         "message": f"Marked {marked_count} messages as read",
         "marked_count": marked_count
     }
+
+
+@router.get("/links/{link_id}/presence", response_model=List[UserPresenceResponse])
+def get_user_presence(
+    link_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get online/offline presence status for users in a link.
+    Returns presence information for both consumer and supplier users in the link.
+    """
+    consumer = get_consumer_for_user(db, current_user)
+    supplier = get_supplier_for_user(db, current_user)
+
+    # Validate link access
+    link = validate_link_access(db, link_id, current_user, consumer, supplier)
+
+    # Get presence records for this link
+    presence_records = db.query(UserPresence).filter(
+        UserPresence.link_id == link_id
+    ).all()
+
+    # If no records exist, create default offline records
+    if not presence_records:
+        # Get user IDs for consumer and supplier
+        consumer_users = db.query(ConsumerStaff).filter(
+            ConsumerStaff.consumer_id == link.consumer_id
+        ).all()
+        supplier_users = db.query(SupplierStaff).filter(
+            SupplierStaff.supplier_id == link.supplier_id
+        ).all()
+
+        presence_records = []
+        from uuid import uuid4
+        now = datetime.utcnow()
+
+        for consumer_user in consumer_users:
+            # Check if user is actually online via WebSocket
+            is_online = manager.is_user_online(link_id, consumer_user.user_id)
+            presence = UserPresence(
+                id=uuid4(),
+                user_id=consumer_user.user_id,
+                link_id=link_id,
+                is_online=is_online,
+                last_seen=now,
+                connected_at=now if is_online else None
+            )
+            presence_records.append(presence)
+
+        for supplier_user in supplier_users:
+            is_online = manager.is_user_online(link_id, supplier_user.user_id)
+            presence = UserPresence(
+                id=uuid4(),
+                user_id=supplier_user.user_id,
+                link_id=link_id,
+                is_online=is_online,
+                last_seen=now,
+                connected_at=now if is_online else None
+            )
+            presence_records.append(presence)
+    else:
+        # Update presence records with current WebSocket status
+        for presence in presence_records:
+            is_online = manager.is_user_online(link_id, presence.user_id)
+            if presence.is_online != is_online:
+                presence.is_online = is_online
+                if not is_online:
+                    presence.last_seen = datetime.utcnow()
+                    presence.connected_at = None
+
+    return [
+        UserPresenceResponse(
+            user_id=p.user_id,
+            is_online=p.is_online,
+            last_seen=p.last_seen,
+            connected_at=p.connected_at
+        )
+        for p in presence_records
+    ]
 
 
 # Canned Replies Endpoints
@@ -894,3 +1030,243 @@ async def send_message_with_files(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to send message with files: {str(e)}"
         )
+
+
+# WebSocket endpoint for real-time chat
+@router.websocket("/ws/{link_id}")
+async def websocket_endpoint(
+    websocket: WebSocket,
+    link_id: UUID,
+    token: str,
+):
+    """
+    WebSocket endpoint for real-time chat communication.
+
+    Authentication: Pass JWT token as query parameter (?token=YOUR_TOKEN)
+
+    Message Types (Client -> Server):
+    - send_message: Send a new text message
+    - mark_read: Mark messages as read
+    - typing_start: Indicate user is typing
+    - typing_stop: Indicate user stopped typing
+    - ping: Heartbeat ping
+
+    Message Types (Server -> Client):
+    - new_message: New message received
+    - message_read: Message(s) marked as read
+    - user_online: User came online
+    - user_offline: User went offline
+    - typing: User is typing
+    - pong: Heartbeat response
+    - error: Error message
+    - sync_messages: Sync missed messages after reconnection
+    """
+    db = None
+    user_id = None
+
+    try:
+        # Authenticate user from token
+        import jwt
+        from jwt.exceptions import InvalidTokenError
+        from app.core.config import settings
+        from app.schemas import UserRead
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+            user_id = UUID(payload.get("sub"))
+            if user_id is None:
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid token")
+                return
+        except InvalidTokenError:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid token")
+            return
+
+        # Get database session
+        db = next(get_db())
+
+        # Get user from database
+        from app.auth.auth import get_user_by_id
+        user = get_user_by_id(db, user_id)
+        if not user:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="User not found")
+            return
+
+        # Get consumer or supplier for user
+        consumer = get_consumer_for_user(db, user)
+        supplier = get_supplier_for_user(db, user)
+
+        # Validate link access
+        try:
+            link = validate_link_access(db, link_id, user, consumer, supplier)
+        except HTTPException as e:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason=e.detail)
+            return
+
+        # Get sender type
+        sender_type = "CONSUMER" if consumer else "SUPPLIER"
+        sender_id = consumer.id if consumer else supplier.id
+
+        # Connect to WebSocket manager
+        await manager.connect(websocket, link_id, user_id, db)
+
+        try:
+            # Send initial sync message with online users
+            online_users = list(manager.get_online_users(link_id))
+            await manager.send_personal_message(websocket, {
+                "type": "connected",
+                "data": {
+                    "message": "Connected to chat",
+                    "link_id": str(link_id),
+                    "online_users": online_users
+                }
+            })
+
+            # Message handling loop
+            while True:
+                # Receive message from client
+                data = await websocket.receive_text()
+                message = json.loads(data)
+
+                message_type = message.get("type")
+                message_data = message.get("data", {})
+
+                if message_type == "ping":
+                    # Respond to heartbeat
+                    await manager.send_personal_message(websocket, {
+                        "type": "pong",
+                        "data": {"timestamp": datetime.utcnow().isoformat()}
+                    })
+
+                elif message_type == "send_message":
+                    # Send a new message
+                    message_text = message_data.get("message_text")
+                    message_type_value = message_data.get("message_type", "TEXT")
+                    product_id = message_data.get("product_id")
+
+                    if not message_text:
+                        await manager.send_personal_message(websocket, {
+                            "type": "error",
+                            "data": {"message": "message_text is required"}
+                        })
+                        continue
+
+                    # Get or create thread
+                    thread = get_or_create_thread(db, link_id)
+
+                    # Create message
+                    from uuid import uuid4
+                    new_message = ChatMessage(
+                        id=uuid4(),
+                        thread_id=thread.id,
+                        sender_id=sender_id,
+                        sender_type=sender_type,
+                        message_text=message_text,
+                        message_type=message_type_value,
+                        product_id=UUID(product_id) if product_id else None,
+                        sent_at=datetime.utcnow(),
+                        read_at=None
+                    )
+
+                    db.add(new_message)
+                    thread.last_message_at = datetime.utcnow()
+                    db.commit()
+                    db.refresh(new_message)
+
+                    # Broadcast to all users in the link
+                    await manager.broadcast_to_link(
+                        link_id,
+                        {
+                            "type": "new_message",
+                            "data": {
+                                "id": str(new_message.id),
+                                "thread_id": str(new_message.thread_id),
+                                "sender_id": str(new_message.sender_id),
+                                "sender_type": new_message.sender_type,
+                                "message_text": new_message.message_text,
+                                "message_type": new_message.message_type,
+                                "product_id": str(new_message.product_id) if new_message.product_id else None,
+                                "sent_at": new_message.sent_at.isoformat(),
+                                "read_at": None,
+                                "attachments": []
+                            }
+                        }
+                    )
+
+                elif message_type == "mark_read":
+                    # Mark messages as read
+                    message_ids = message_data.get("message_ids", [])
+                    if message_ids:
+                        read_at = datetime.utcnow()
+                        updated_count = db.query(ChatMessage).filter(
+                            ChatMessage.id.in_([UUID(mid) for mid in message_ids]),
+                            ChatMessage.read_at.is_(None)
+                        ).update({"read_at": read_at}, synchronize_session=False)
+
+                        db.commit()
+
+                        if updated_count > 0:
+                            # Broadcast read receipt to sender
+                            await manager.broadcast_to_link(
+                                link_id,
+                                {
+                                    "type": "messages_read",
+                                    "data": {
+                                        "message_ids": message_ids,
+                                        "read_by": str(user_id),
+                                        "read_at": read_at.isoformat()
+                                    }
+                                }
+                            )
+
+                elif message_type == "typing_start":
+                    # Broadcast typing indicator
+                    await manager.broadcast_to_link(
+                        link_id,
+                        {
+                            "type": "typing",
+                            "data": {
+                                "user_id": str(user_id),
+                                "is_typing": True
+                            }
+                        },
+                        exclude_user=user_id
+                    )
+
+                elif message_type == "typing_stop":
+                    # Broadcast typing stopped
+                    await manager.broadcast_to_link(
+                        link_id,
+                        {
+                            "type": "typing",
+                            "data": {
+                                "user_id": str(user_id),
+                                "is_typing": False
+                            }
+                        },
+                        exclude_user=user_id
+                    )
+
+                else:
+                    await manager.send_personal_message(websocket, {
+                        "type": "error",
+                        "data": {"message": f"Unknown message type: {message_type}"}
+                    })
+
+        except WebSocketDisconnect:
+            logger.info(f"WebSocket disconnected for user {user_id}")
+        except Exception as e:
+            logger.error(f"Error in WebSocket handler: {e}")
+            await manager.send_personal_message(websocket, {
+                "type": "error",
+                "data": {"message": f"Internal error: {str(e)}"}
+            })
+        finally:
+            # Disconnect and clean up
+            if user_id and db:
+                await manager.disconnect(websocket, link_id, user_id, db)
+
+    except Exception as e:
+        logger.error(f"Fatal error in WebSocket endpoint: {e}")
+    finally:
+        if db:
+            db.close()

@@ -203,6 +203,17 @@ class ChatAttachment(Base):
     message: Mapped["ChatMessage"] = relationship(back_populates="attachments")
 
 
+class UserPresence(Base):
+    __tablename__ = "user_presence"
+
+    id: Mapped[PyUUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id: Mapped[PyUUID] = mapped_column(ForeignKey("users.id"))
+    link_id: Mapped[PyUUID] = mapped_column(ForeignKey("consumer_supplier_links.id"))
+    is_online: Mapped[bool] = mapped_column(Boolean, default=False)
+    last_seen: Mapped[datetime] = mapped_column(DateTime)
+    connected_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
 class Incident(Base):
     __tablename__ = "incidents"
 
