@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
-import { useAuth } from "../../context/AuthContext"; // adjust path if needed
+import { useAuth } from "../context/AuthContext"; // adjust path if needed
 
 type Product = {
   id: string;
@@ -320,7 +320,18 @@ export default function ProductInfo() {
   return (
     <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
       <View style={styles.sectionBox}>
-        <Text style={styles.sectionTitle}>Product Categories</Text>
+        <Text style={styles.sectionTitle}>Existing Categories</Text>
+        {categories.filter(Boolean).length > 0 ? (
+          categories.filter(Boolean).map((cat, idx) => (
+            <Text key={`existing-cat-${idx}`} style={{ marginBottom: 6 }}>
+              {cat}
+            </Text>
+          ))
+        ) : (
+          <Text style={{ fontStyle: "italic", color: "#888" }}>No categories yet</Text>
+        )}
+
+        <Text style={[styles.sectionTitle, { marginTop: 12 }]}>Manage Categories</Text>
         {categories.map((cat, idx) => (
           <TextInput
             key={idx}
@@ -334,7 +345,6 @@ export default function ProductInfo() {
           <Text style={styles.addBtnText}>+ Add Category</Text>
         </TouchableOpacity>
 
-        {/* Save categories button */}
         <TouchableOpacity
           style={[styles.saveBtn, { backgroundColor: "#2F80ED", marginTop: 12 }]}
           onPress={handleSaveCategories}
@@ -345,7 +355,24 @@ export default function ProductInfo() {
       </View>
 
       <View style={styles.sectionBox}>
-        <Text style={styles.sectionTitle}>Products</Text>
+        <Text style={styles.sectionTitle}>Existing Products</Text>
+        {products.filter(p => !p._isNew).length > 0 ? (
+          products.filter(p => !p._isNew).map((p) => (
+            <View key={`existing-prod-${p.id}`} style={styles.box}>
+              <Text style={{ fontWeight: "600" }}>{p.name || "(No name)"}</Text>
+              <Text>Unit: {p.unit}</Text>
+              <Text>Price: {p.price}</Text>
+              <Text>SKU: {p.sku}</Text>
+              <Text>Availability: {p.availability}</Text>
+              <Text>Brand: {p.brand}</Text>
+              <Text>Category: {p.category}</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={{ fontStyle: "italic", color: "#888" }}>No products yet</Text>
+        )}
+
+        <Text style={[styles.sectionTitle, { marginTop: 12 }]}>Manage Products</Text>
         <FlatList
           data={products}
           keyExtractor={(p) => p.id}
@@ -356,7 +383,6 @@ export default function ProductInfo() {
           <Text style={styles.addBtnText}>+ Add Product</Text>
         </TouchableOpacity>
 
-        {/* Save products button */}
         <TouchableOpacity
           style={[styles.saveBtn, { backgroundColor: "#16A34A", marginTop: 12 }]}
           onPress={handleSaveProducts}
@@ -366,6 +392,7 @@ export default function ProductInfo() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+
   );
 }
 
