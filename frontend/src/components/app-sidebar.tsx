@@ -77,12 +77,6 @@ const supplierNavItems = [
     description:
       'Manage supplier account settings, user roles, and permissions (Owner only).',
   },
-  {
-    title: 'Logout',
-    url: '/logout',
-    icon: LogOut,
-    description: 'Log out of the supplier account.',
-  },
 ]
 
 // Consumer navigation items
