@@ -16,6 +16,7 @@ import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as DashboardSuppliersIndexRouteImport } from './routes/dashboard/suppliers/index'
 import { Route as DashboardOrdersIndexRouteImport } from './routes/dashboard/orders/index'
 import { Route as DashboardLinksIndexRouteImport } from './routes/dashboard/links/index'
+import { Route as DashboardChatIndexRouteImport } from './routes/dashboard/chat/index'
 import { Route as DashboardCatalogIndexRouteImport } from './routes/dashboard/catalog/index'
 import { Route as AuthSupplierSignupIndexRouteImport } from './routes/auth/supplier/signup/index'
 import { Route as AuthSupplierLoginIndexRouteImport } from './routes/auth/supplier/login/index'
@@ -57,6 +58,11 @@ const DashboardLinksIndexRoute = DashboardLinksIndexRouteImport.update({
   path: '/links/',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
+const DashboardChatIndexRoute = DashboardChatIndexRouteImport.update({
+  id: '/chat/',
+  path: '/chat/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
 const DashboardCatalogIndexRoute = DashboardCatalogIndexRouteImport.update({
   id: '/catalog/',
   path: '/catalog/',
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/catalog': typeof DashboardCatalogIndexRoute
+  '/dashboard/chat': typeof DashboardChatIndexRoute
   '/dashboard/links': typeof DashboardLinksIndexRoute
   '/dashboard/orders': typeof DashboardOrdersIndexRoute
   '/dashboard/suppliers': typeof DashboardSuppliersIndexRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/catalog': typeof DashboardCatalogIndexRoute
+  '/dashboard/chat': typeof DashboardChatIndexRoute
   '/dashboard/links': typeof DashboardLinksIndexRoute
   '/dashboard/orders': typeof DashboardOrdersIndexRoute
   '/dashboard/suppliers': typeof DashboardSuppliersIndexRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/auth/': typeof AuthIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/catalog/': typeof DashboardCatalogIndexRoute
+  '/dashboard/chat/': typeof DashboardChatIndexRoute
   '/dashboard/links/': typeof DashboardLinksIndexRoute
   '/dashboard/orders/': typeof DashboardOrdersIndexRoute
   '/dashboard/suppliers/': typeof DashboardSuppliersIndexRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard/'
     | '/dashboard/catalog'
+    | '/dashboard/chat'
     | '/dashboard/links'
     | '/dashboard/orders'
     | '/dashboard/suppliers'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/dashboard/catalog'
+    | '/dashboard/chat'
     | '/dashboard/links'
     | '/dashboard/orders'
     | '/dashboard/suppliers'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/auth/'
     | '/dashboard/'
     | '/dashboard/catalog/'
+    | '/dashboard/chat/'
     | '/dashboard/links/'
     | '/dashboard/orders/'
     | '/dashboard/suppliers/'
@@ -230,6 +242,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLinksIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/dashboard/chat/': {
+      id: '/dashboard/chat/'
+      path: '/chat'
+      fullPath: '/dashboard/chat'
+      preLoaderRoute: typeof DashboardChatIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     '/dashboard/catalog/': {
       id: '/dashboard/catalog/'
       path: '/catalog'
@@ -271,6 +290,7 @@ declare module '@tanstack/react-router' {
 interface DashboardRouteRouteChildren {
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardCatalogIndexRoute: typeof DashboardCatalogIndexRoute
+  DashboardChatIndexRoute: typeof DashboardChatIndexRoute
   DashboardLinksIndexRoute: typeof DashboardLinksIndexRoute
   DashboardOrdersIndexRoute: typeof DashboardOrdersIndexRoute
   DashboardSuppliersIndexRoute: typeof DashboardSuppliersIndexRoute
@@ -279,6 +299,7 @@ interface DashboardRouteRouteChildren {
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardCatalogIndexRoute: DashboardCatalogIndexRoute,
+  DashboardChatIndexRoute: DashboardChatIndexRoute,
   DashboardLinksIndexRoute: DashboardLinksIndexRoute,
   DashboardOrdersIndexRoute: DashboardOrdersIndexRoute,
   DashboardSuppliersIndexRoute: DashboardSuppliersIndexRoute,
