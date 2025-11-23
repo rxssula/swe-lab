@@ -433,10 +433,10 @@ export function ChatManagement({ userType }: ChatManagementProps) {
       </Card>
 
       {/* Chat Area */}
-      <Card className="flex-1 flex flex-col">
+      <Card className="flex-1 flex flex-col min-h-0">
         {selectedThread ? (
           <>
-            <CardHeader className="border-b">
+            <CardHeader className="border-b shrink-0">
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>
@@ -455,9 +455,9 @@ export function ChatManagement({ userType }: ChatManagementProps) {
               </div>
             </CardHeader>
 
-            <CardContent className="flex-1 flex flex-col p-0">
+            <CardContent className="flex-1 flex flex-col p-0 min-h-0">
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4">
+              <div className="flex-1 overflow-y-auto p-4 min-h-0">
                 <div className="space-y-4">
                   {messages.map((message) => {
                     const isOwnMessage = message.sender_id === currentUser?.id
@@ -544,7 +544,7 @@ export function ChatManagement({ userType }: ChatManagementProps) {
 
               {/* Selected Files */}
               {selectedFiles.length > 0 && (
-                <div className="border-t p-2">
+                <div className="border-t p-2 shrink-0">
                   <div className="flex flex-wrap gap-2">
                     {selectedFiles.map((file, index) => (
                       <div
@@ -568,7 +568,7 @@ export function ChatManagement({ userType }: ChatManagementProps) {
               )}
 
               {/* Input Area */}
-              <div className="border-t p-4">
+              <div className="border-t p-4 shrink-0">
                 <div className="flex gap-2">
                   <label className="cursor-pointer">
                     <Paperclip className="h-5 w-5 text-muted-foreground hover:text-foreground" />
