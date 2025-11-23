@@ -74,8 +74,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const body = await resp.json();
         const t = body.access || body.token || body?.access_token;
+        console.log(body);
         const u = {
-          id: body.user.id,
+          id: body.consumer_id ? body.consumer_id : body.supplier_id,
           email: body.user.email,
           role: body.role,
           userType: body.user_type,

@@ -35,6 +35,7 @@ export default function Profile() {
         });
         if (!resp.ok) throw new Error('Failed to fetch user info');
         const data = await resp.json();
+        console.log("data:", data)
 
         const assoc = data.supplier_associations?.[0] || data.consumer_associations?.[0];
         setBusinessName(assoc?.supplier?.business_name || assoc?.consumer?.business_name || '');
@@ -102,15 +103,17 @@ export default function Profile() {
             </View>
           </View>
 
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Manager:</Text>
-            <View style={styles.infoRight}>
-              <Text style={styles.infoText}>{manager}</Text>
-              <TouchableOpacity style={styles.editButton}>
-                <Ionicons name="pencil" size={16} color="#007bff" />
-              </TouchableOpacity>
+          {user.role === 'SALES' | user.role === 'STAFF' ? (
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Manager:</Text>
+              <View style={styles.infoRight}>
+                <Text style={styles.infoText}>{manager}</Text>
+                <TouchableOpacity style={styles.editButton}>
+                  <Ionicons name="pencil" size={16} color="#007bff" />
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          ) : null}
         </View>
 
         {(user?.role === "MANAGER" || user?.role === "OWNER") && (

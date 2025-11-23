@@ -36,7 +36,7 @@ export default function Signup() {
             const endpoint = `${base}/${role}`;
 
             const payload: Record<string, any> = {
-                full_name: fullName, // <-- NEW FIELD
+                name: fullName, 
                 business_name: businessName,
                 business_type: businessType,
                 address,
