@@ -39,6 +39,8 @@ export interface SignupResponse {
   user: User
   user_type: string
   role: string
+  consumer_id?: string
+  supplier_id?: string
 }
 
 export interface LoginRequest {
@@ -56,6 +58,12 @@ export interface CurrentUser {
   phone_number?: string
   created_at: string
   last_login_at?: string
+}
+
+export interface UserUpdateRequest {
+  email?: string
+  phone_number?: string
+  password?: string
 }
 
 export async function login(data: LoginRequest): Promise<SignupResponse> {
@@ -145,6 +153,34 @@ export async function getCurrentUser(): Promise<CurrentUser> {
     const errorWithStatus = new Error(`${response.status}: ${errorMessage}`)
     ;(errorWithStatus as any).status = response.status
     throw errorWithStatus
+  }
+
+  return response.json()
+}
+
+export async function updateUser(
+  userId: string,
+  data: UserUpdateRequest,
+): Promise<CurrentUser> {
+  const token = localStorage.getItem('access_token')
+  if (!token) {
+    throw new Error('No access token found')
+  }
+
+  const response = await fetch(getApiUrl(`users/${userId}`), {
+    method: 'PATCH',
+    headers: {
+      ...defaultHeaders,
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  })
+
+  if (!response.ok) {
+    const error: ApiError = await response.json().catch(() => ({
+      detail: 'Failed to update user information',
+    }))
+    throw new Error(error.detail || `Update failed: ${response.statusText}`)
   }
 
   return response.json()

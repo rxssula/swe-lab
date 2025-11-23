@@ -17,6 +17,15 @@ export function useConsumerSignup() {
       localStorage.setItem('access_token', data.access_token)
       localStorage.setItem('user_type', data.user_type)
       localStorage.setItem('role', data.role)
+      if (data.consumer_id) {
+        localStorage.setItem('consumer_id', data.consumer_id)
+      }
+      if (data.supplier_id) {
+        localStorage.setItem('supplier_id', data.supplier_id)
+      }
+      if (data.user?.id) {
+        localStorage.setItem('user_id', data.user.id)
+      }
 
       navigate({ to: '/dashboard/catalog' }).catch(() => {
         navigate({ to: '/' })
@@ -34,6 +43,15 @@ export function useSupplierSignup() {
       localStorage.setItem('access_token', data.access_token)
       localStorage.setItem('user_type', data.user_type)
       localStorage.setItem('role', data.role)
+      if (data.consumer_id) {
+        localStorage.setItem('consumer_id', data.consumer_id)
+      }
+      if (data.supplier_id) {
+        localStorage.setItem('supplier_id', data.supplier_id)
+      }
+      if (data.user?.id) {
+        localStorage.setItem('user_id', data.user.id)
+      }
 
       navigate({ to: '/dashboard/catalog' }).catch(() => {
         navigate({ to: '/' })

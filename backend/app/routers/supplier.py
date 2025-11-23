@@ -85,14 +85,17 @@ def create_supplier_staff(
     else:
         raise HTTPException(status_code=403, detail="Only owners and managers can create staff")
 
-    # Validate the role value
+    # Validate the role value (normalize to uppercase)
     try:
-        SupplierRole(staff_data.role)
+        SupplierRole(staff_data.role.upper())
     except ValueError:
         raise HTTPException(
             status_code=400,
             detail=f"Invalid role. Must be one of: {[r.value for r in SupplierRole]}"
         )
+    
+    # Normalize role to uppercase
+    staff_data.role = staff_data.role.upper()
 
     # Check if user already exists
     existing_user = db.query(User).filter(User.email == staff_data.email).first()

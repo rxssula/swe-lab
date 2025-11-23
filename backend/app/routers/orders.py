@@ -356,8 +356,6 @@ def complete_order(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Mark an accepted order as completed"""
-    """Mark an accepted order as completed"""
     supplier = get_supplier_for_user(current_user, db)
     order = db.query(Order).filter(
         and_(
@@ -377,6 +375,26 @@ def complete_order(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Cannot complete order with status: {order.status.value}. Order must be accepted first."
         )
+
+    # Get current user's staff record to check role
+    supplier_staff = db.query(SupplierStaff).filter(
+        SupplierStaff.user_id == current_user.id,
+        SupplierStaff.supplier_id == supplier.id
+    ).first()
+
+    # Update stock levels if user is Manager or Owner
+    if supplier_staff and supplier_staff.role in [SupplierRole.MANAGER.value, SupplierRole.OWNER.value]:
+        for item in order.items:
+            product = db.query(Product).filter(Product.id == item.product_id).first()
+            if product:
+                # Reduce stock by the ordered quantity
+                new_stock = product.stock_level - item.quantity
+                if new_stock < 0:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Insufficient stock for {product.name}. Available: {product.stock_level}, Ordered: {item.quantity}"
+                    )
+                product.stock_level = new_stock
 
     order.status = OrderStatus.COMPLETED
     order.completed_at = datetime.utcnow()

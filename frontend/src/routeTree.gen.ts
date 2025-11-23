@@ -14,6 +14,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as DashboardSuppliersIndexRouteImport } from './routes/dashboard/suppliers/index'
+import { Route as DashboardSettingsIndexRouteImport } from './routes/dashboard/settings/index'
 import { Route as DashboardOrdersIndexRouteImport } from './routes/dashboard/orders/index'
 import { Route as DashboardLinksIndexRouteImport } from './routes/dashboard/links/index'
 import { Route as DashboardComplaintsIndexRouteImport } from './routes/dashboard/complaints/index'
@@ -47,6 +48,11 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
 const DashboardSuppliersIndexRoute = DashboardSuppliersIndexRouteImport.update({
   id: '/suppliers/',
   path: '/suppliers/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardSettingsIndexRoute = DashboardSettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
 const DashboardOrdersIndexRoute = DashboardOrdersIndexRouteImport.update({
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/complaints': typeof DashboardComplaintsIndexRoute
   '/dashboard/links': typeof DashboardLinksIndexRoute
   '/dashboard/orders': typeof DashboardOrdersIndexRoute
+  '/dashboard/settings': typeof DashboardSettingsIndexRoute
   '/dashboard/suppliers': typeof DashboardSuppliersIndexRoute
   '/auth/consumer/login': typeof AuthConsumerLoginIndexRoute
   '/auth/consumer/signup': typeof AuthConsumerSignupIndexRoute
@@ -121,6 +128,7 @@ export interface FileRoutesByTo {
   '/dashboard/complaints': typeof DashboardComplaintsIndexRoute
   '/dashboard/links': typeof DashboardLinksIndexRoute
   '/dashboard/orders': typeof DashboardOrdersIndexRoute
+  '/dashboard/settings': typeof DashboardSettingsIndexRoute
   '/dashboard/suppliers': typeof DashboardSuppliersIndexRoute
   '/auth/consumer/login': typeof AuthConsumerLoginIndexRoute
   '/auth/consumer/signup': typeof AuthConsumerSignupIndexRoute
@@ -138,6 +146,7 @@ export interface FileRoutesById {
   '/dashboard/complaints/': typeof DashboardComplaintsIndexRoute
   '/dashboard/links/': typeof DashboardLinksIndexRoute
   '/dashboard/orders/': typeof DashboardOrdersIndexRoute
+  '/dashboard/settings/': typeof DashboardSettingsIndexRoute
   '/dashboard/suppliers/': typeof DashboardSuppliersIndexRoute
   '/auth/consumer/login/': typeof AuthConsumerLoginIndexRoute
   '/auth/consumer/signup/': typeof AuthConsumerSignupIndexRoute
@@ -156,6 +165,7 @@ export interface FileRouteTypes {
     | '/dashboard/complaints'
     | '/dashboard/links'
     | '/dashboard/orders'
+    | '/dashboard/settings'
     | '/dashboard/suppliers'
     | '/auth/consumer/login'
     | '/auth/consumer/signup'
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/dashboard/complaints'
     | '/dashboard/links'
     | '/dashboard/orders'
+    | '/dashboard/settings'
     | '/dashboard/suppliers'
     | '/auth/consumer/login'
     | '/auth/consumer/signup'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/dashboard/complaints/'
     | '/dashboard/links/'
     | '/dashboard/orders/'
+    | '/dashboard/settings/'
     | '/dashboard/suppliers/'
     | '/auth/consumer/login/'
     | '/auth/consumer/signup/'
@@ -239,6 +251,13 @@ declare module '@tanstack/react-router' {
       path: '/suppliers'
       fullPath: '/dashboard/suppliers'
       preLoaderRoute: typeof DashboardSuppliersIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/settings/': {
+      id: '/dashboard/settings/'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
     '/dashboard/orders/': {
@@ -314,6 +333,7 @@ interface DashboardRouteRouteChildren {
   DashboardComplaintsIndexRoute: typeof DashboardComplaintsIndexRoute
   DashboardLinksIndexRoute: typeof DashboardLinksIndexRoute
   DashboardOrdersIndexRoute: typeof DashboardOrdersIndexRoute
+  DashboardSettingsIndexRoute: typeof DashboardSettingsIndexRoute
   DashboardSuppliersIndexRoute: typeof DashboardSuppliersIndexRoute
 }
 
@@ -324,6 +344,7 @@ const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardComplaintsIndexRoute: DashboardComplaintsIndexRoute,
   DashboardLinksIndexRoute: DashboardLinksIndexRoute,
   DashboardOrdersIndexRoute: DashboardOrdersIndexRoute,
+  DashboardSettingsIndexRoute: DashboardSettingsIndexRoute,
   DashboardSuppliersIndexRoute: DashboardSuppliersIndexRoute,
 }
 

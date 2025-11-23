@@ -44,6 +44,10 @@ export function CatalogManagement() {
 
   const queryClient = useQueryClient()
 
+  // Get user role from localStorage
+  const userRole = localStorage.getItem('role') as string | null
+  const canManageCatalog = userRole === 'OWNER' || userRole === 'MANAGER'
+
   // Fetch products
   const {
     data: products = [],
@@ -115,57 +119,59 @@ export function CatalogManagement() {
             Manage your products, availability, and minimum order quantities
           </p>
         </div>
-        <div className="flex gap-2">
-          <Dialog
-            open={isCategoryDialogOpen}
-            onOpenChange={setIsCategoryDialogOpen}
-          >
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Package className="mr-2 h-4 w-4" />
-                Add Category
+        {canManageCatalog && (
+          <div className="flex gap-2">
+            <Dialog
+              open={isCategoryDialogOpen}
+              onOpenChange={setIsCategoryDialogOpen}
+            >
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Package className="mr-2 h-4 w-4" />
+                  Add Category
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Category</DialogTitle>
+                  <DialogDescription>
+                    Create a new product category to organize your catalog
+                  </DialogDescription>
+                </DialogHeader>
+                <CategoryForm
+                  categories={categories}
+                  onSuccess={handleCategoryDialogClose}
+                />
+              </DialogContent>
+            </Dialog>
+            <Dialog
+              open={isProductDialogOpen}
+              onOpenChange={setIsProductDialogOpen}
+            >
+              <Button onClick={handleAddProduct}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Product
               </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add Category</DialogTitle>
-                <DialogDescription>
-                  Create a new product category to organize your catalog
-                </DialogDescription>
-              </DialogHeader>
-              <CategoryForm
-                categories={categories}
-                onSuccess={handleCategoryDialogClose}
-              />
-            </DialogContent>
-          </Dialog>
-          <Dialog
-            open={isProductDialogOpen}
-            onOpenChange={setIsProductDialogOpen}
-          >
-            <Button onClick={handleAddProduct}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Product
-            </Button>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingProduct ? 'Edit Product' : 'Add Product'}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingProduct
-                    ? 'Update product details and availability'
-                    : 'Add a new product to your catalog'}
-                </DialogDescription>
-              </DialogHeader>
-              <ProductForm
-                product={editingProduct}
-                categories={categories}
-                onSuccess={handleProductDialogClose}
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingProduct ? 'Edit Product' : 'Add Product'}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {editingProduct
+                      ? 'Update product details and availability'
+                      : 'Add a new product to your catalog'}
+                  </DialogDescription>
+                </DialogHeader>
+                <ProductForm
+                  product={editingProduct}
+                  categories={categories}
+                  onSuccess={handleProductDialogClose}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -264,16 +270,18 @@ export function CatalogManagement() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditProduct(product)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <ProductDeleteButton productId={product.id} />
-                    </div>
+                    {canManageCatalog && (
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditProduct(product)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <ProductDeleteButton productId={product.id} />
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

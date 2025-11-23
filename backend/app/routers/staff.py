@@ -97,7 +97,8 @@ def remove_supplier_staff(
 ):
     """
     Remove a staff member from supplier.
-    Only Owner can remove staff.
+    - Owner can remove any staff member
+    - Manager can only remove Sales Representatives
     Owner cannot remove themselves.
     """
     current_staff = get_supplier_staff(db, current_user)
@@ -105,12 +106,6 @@ def remove_supplier_staff(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only supplier staff can remove staff members"
-        )
-
-    if current_staff.role != SupplierRole.OWNER.value:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only Owner can remove staff members"
         )
 
     target_staff = db.query(SupplierStaff).filter(
@@ -130,6 +125,23 @@ def remove_supplier_staff(
             detail="Cannot remove yourself. Transfer ownership first or delete the supplier account."
         )
 
+    # Check permissions
+    if current_staff.role == SupplierRole.OWNER.value:
+        # Owner can remove anyone
+        pass
+    elif current_staff.role == SupplierRole.MANAGER.value:
+        # Manager can only remove Sales Representatives
+        if target_staff.role != SupplierRole.SALES.value:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Managers can only remove Sales Representatives"
+            )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Owner or Manager can remove staff members"
+        )
+
     db.delete(target_staff)
     db.commit()
 
@@ -145,7 +157,8 @@ def update_supplier_staff_role(
 ):
     """
     Update a staff member's role.
-    Only Owner can update roles.
+    - Owner can update any role (except Owner)
+    - Manager can only update Sales Representatives (to/from SALES)
     Cannot change Owner role (must be transferred).
     """
     current_staff = get_supplier_staff(db, current_user)
@@ -155,14 +168,8 @@ def update_supplier_staff_role(
             detail="Only supplier staff can update roles"
         )
 
-    if current_staff.role != SupplierRole.OWNER.value:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only Owner can update staff roles"
-        )
-
     try:
-        new_role = SupplierRole(data.role.lower())
+        new_role = SupplierRole(data.role.upper())
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -190,6 +197,29 @@ def update_supplier_staff_role(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot change Owner role. Use ownership transfer endpoint instead."
+        )
+
+    # Check permissions
+    if current_staff.role == SupplierRole.OWNER.value:
+        # Owner can update any role (except Owner, already checked above)
+        pass
+    elif current_staff.role == SupplierRole.MANAGER.value:
+        # Manager can only update Sales Representatives
+        if target_staff.role != SupplierRole.SALES.value:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Managers can only update Sales Representatives"
+            )
+        # Manager can only assign SALES role
+        if new_role != SupplierRole.SALES:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Managers can only assign Sales Representative role"
+            )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Owner or Manager can update staff roles"
         )
 
     target_staff.role = new_role.value
