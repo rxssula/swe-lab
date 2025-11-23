@@ -35,6 +35,7 @@ export default function Signup() {
             const endpoint = `${base}/${role}/`;
 
             const payload: Record<string, any> = {
+                business_name: businessName,
                 business_type: businessType,
                 address,
                 city,
@@ -43,12 +44,6 @@ export default function Signup() {
                 password,
                 phone_number: phoneNumber,
             };
-
-            if (role === 'supplier') {
-                payload.company_name = businessName;
-            } else {
-                payload.business_name = businessName;
-            }
 
             const response = await fetch(endpoint, {
                 method: "POST",

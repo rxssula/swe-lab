@@ -1,93 +1,109 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useAuth } from "../../context/AuthContext"; 
-
+import { useAuth } from '../../context/AuthContext'; // adjust path if needed
 
 export default function Profile() {
-    const { signOut } = useAuth();
-    const router = useRouter();
-    const user = {
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        phone: '+1 234 567 890',
-        avatar: 'https://i.pravatar.cc/150?img=3',
-    };
+  const { user, isLoading, signOut } = useAuth();
+  const router = useRouter();
 
+  useEffect(() => {
+    // if provider finished loading and no user, redirect to login
+    if (!isLoading && !user) {
+      signOut();
+    }
+  }, [isLoading, user, router]);
+
+  if (isLoading || !user) {
     return (
-        <View style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContainer}>
-                {/* Avatar */}
-                <View style={styles.avatarContainer}>
-                    <Image source={{ uri: user.avatar }} style={styles.avatar} />
-                    <TouchableOpacity style={styles.editAvatar}>
-                        <Ionicons name="pencil" size={20} color="#fff" />
-                    </TouchableOpacity>
-                </View>
-
-                {/* User Info */}
-                <View style={styles.infoContainer}>
-                    <View style={styles.infoRow}>
-                        <Text style={styles.label}>Name</Text>
-                        <View style={styles.infoRight}>
-                            <Text style={styles.infoText}>{user.name}</Text>
-                            <TouchableOpacity style={styles.editButton}>
-                                <Ionicons name="pencil" size={16} color="#007bff" />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    <View style={styles.infoRow}>
-                        <Text style={styles.label}>Email</Text>
-                        <View style={styles.infoRight}>
-                            <Text style={styles.infoText}>{user.email}</Text>
-                            <TouchableOpacity style={styles.editButton}>
-                                <Ionicons name="pencil" size={16} color="#007bff" />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    <View style={styles.infoRow}>
-                        <Text style={styles.label}>Phone</Text>
-                        <View style={styles.infoRight}>
-                            <Text style={styles.infoText}>{user.phone}</Text>
-                            <TouchableOpacity style={styles.editButton}>
-                                <Ionicons name="pencil" size={16} color="#007bff" />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-
-                {/* NEW — Manage Business Button */}
-                <TouchableOpacity
-                    style={styles.manageButton}
-                    onPress={() => router.push('/supplier/manage-business')}
-                >
-                    <Ionicons name="business-outline" size={22} color="#fff" />
-                    <Text style={styles.manageButtonText}>Manage Business</Text>
-                </TouchableOpacity>
-
-            </ScrollView>
-
-            {/* Bottom Buttons */}
-            <View style={styles.bottomButtons}>
-                <TouchableOpacity style={styles.bottomButton}>
-                    <Ionicons name="settings-outline" size={20} color="#007bff" />
-                    <Text style={styles.bottomButtonText}>Settings</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.bottomButton, { backgroundColor: '#ff4d4d' }]}
-                    onPress={signOut}
-                >
-                    <Ionicons name="log-out-outline" size={20} color="#fff" />
-                    <Text style={[styles.bottomButtonText, { color: '#fff' }]}>Logout</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" />
+      </View>
     );
+  }
+
+  console.log(user);
+
+  const userType = user.userType;
+  const role = user.role;
+
+  // map backend fields to UI-friendly names (adjust keys to your backend)
+  const displayName = user.name ?? user.full_name ?? user.business_name ?? user.company_name ?? user.email;
+  const email = user.email ?? '—';
+  const phone = user.phone ?? user.phone_number ?? '—';
+  const avatar = user.avatar_url ?? user.avatar ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}`;
+
+  return (
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.avatarContainer}>
+          <Image source={{ uri: avatar }} style={styles.avatar} />
+          <TouchableOpacity style={styles.editAvatar}>
+            <Ionicons name="pencil" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.infoContainer}>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Name</Text>
+            <View style={styles.infoRight}>
+              <Text style={styles.infoText}>{displayName}</Text>
+              <TouchableOpacity style={styles.editButton}>
+                <Ionicons name="pencil" size={16} color="#007bff" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Email</Text>
+            <View style={styles.infoRight}>
+              <Text style={styles.infoText}>{email}</Text>
+              <TouchableOpacity style={styles.editButton}>
+                <Ionicons name="pencil" size={16} color="#007bff" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Phone</Text>
+            <View style={styles.infoRight}>
+              <Text style={styles.infoText}>{phone}</Text>
+              <TouchableOpacity style={styles.editButton}>
+                <Ionicons name="pencil" size={16} color="#007bff" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={styles.manageButton}
+          onPress={() => router.push('/supplier/manage-business')}
+        >
+          <Ionicons name="business-outline" size={22} color="#fff" />
+          <Text style={styles.manageButtonText}>Manage Business</Text>
+        </TouchableOpacity>
+      </ScrollView>
+
+      <View style={styles.bottomButtons}>
+        <TouchableOpacity style={styles.bottomButton}>
+          <Ionicons name="settings-outline" size={20} color="#007bff" />
+          <Text style={styles.bottomButtonText}>Settings</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.bottomButton, { backgroundColor: '#ff4d4d' }]}
+          onPress={signOut}
+        >
+          <Ionicons name="log-out-outline" size={20} color="#fff" />
+          <Text style={[styles.bottomButtonText, { color: '#fff' }]}>Logout</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 }
+
+// keep your existing styles unchanged
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f5f5f5' },
