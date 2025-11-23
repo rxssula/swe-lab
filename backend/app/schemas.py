@@ -46,7 +46,7 @@ class ConsumerAssociation(BaseModel):
     """Consumer company association with user role and manager info"""
     consumer: ConsumerRead
     role: str
-    manager: Optional[ManagerInfo] = None
+    manager: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -56,7 +56,7 @@ class SupplierAssociation(BaseModel):
     """Supplier company association with user role and manager info"""
     supplier: SupplierRead
     role: str
-    manager: Optional[ManagerInfo] = None
+    manager: Optional[str] = None
 
     class Config:
         from_attributes = True
