@@ -10,75 +10,66 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from '../context/AuthContext'; // adjust path if needed
+import { useAuth } from '../../context/AuthContext'; // adjust path if needed
 
 export default function AddWorker() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
+  const [passcode, setPasscode] = useState('');
   const [role, setRole] = useState('sales');
-  const [phone, setPhone] = useState('sales');
   const [isSaving, setIsSaving] = useState(false);
 
   // try to get token from AuthProvider if available
-  const { user, token, signOut } = useAuth();
-  if (!token) signOut();
-  console.log(user);
- 
-  const WORKERS_URL = 'https://swe-lab-1.onrender.com/supplier/workers/'; // <- change to your API endpoint
-
-  let roleOptionsArray: { label: string; value: string }[] = [];
-  if (user?.role === "OWNER") {
-    roleOptionsArray =
-      user.userType === "consumer"
-        ? [
-            { label: "Staff", value: "STAFF" },
-            { label: "Manager", value: "MANAGER" },
-          ]
-        : [
-            { label: "Sales Representative", value: "SALES" },
-            { label: "Manager", value: "MANAGER" },
-          ];
-  } 
-  else if (user?.role === "MANAGER") {
-    roleOptionsArray =
-      user.userType === "consumer"
-        ? [{ label: "Staff", value: "STAFF" }]
-        : [{ label: "Sales Representative", value: "SALES" }];
+  let tokenFromContext: string | null = null;
+  try {
+    // safe: if useAuth isn't available, this will throw — we catch below by try/catch
+    // If you definitely have AuthProvider, you can just: const { token } = useAuth();
+    // and remove the try-catch below.
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const auth = useAuth();
+    tokenFromContext = auth?.token ?? null;
+  } catch {
+    tokenFromContext = null;
   }
 
+  const TOKEN_KEY = 'token'; // or 'userToken' if you use SecureStore / different key
+  const WORKERS_URL = 'https://swe-lab-1.onrender.com/supplier/workers/'; // <- change to your API endpoint
+
+  const getToken = async () => {
+    if (tokenFromContext) return tokenFromContext;
+    const t = await AsyncStorage.getItem(TOKEN_KEY);
+    return t;
+  };
+
   const validate = () => {
-    if (!email.trim()) {
-      Alert.alert('Validation', 'Email is required');
+    if (!username.trim()) {
+      Alert.alert('Validation', 'Username is required');
       return false;
     }
-    if (!password) {
-      Alert.alert('Validation', 'Password is required');
+    if (!passcode) {
+      Alert.alert('Validation', 'Passcode is required');
       return false;
     }
-    if (!phone) {
-      Alert.alert('Validation', 'Phone is required');
-      return false;
-    }
+    // optional: add password rules, username format, etc.
     return true;
   };
 
   const handleSave = async () => {
     if (!validate()) return;
+
     setIsSaving(true);
     try {
+      const token = await getToken();
       if (!token) {
         Alert.alert('Auth', 'Not authenticated. Please log in.');
-        signOut();
         return;
       }
 
+      // Build payload — adapt field names to backend (username, password, role are common)
       const payload = {
-        username: email.trim(),
-        password: password,
-        role,
-        phone,
-        // consumer_id: user.id ? user.userType==="consumer" : null,
-        // supplier_id: user.id ? user.userType==="supplier" : null,
+        username: username.trim(),
+        password: passcode,
+        role, // e.g. 'sales' or 'manager'
+        // add any extra fields required by your API here
       };
 
       const resp = await fetch(WORKERS_URL, {
@@ -97,10 +88,13 @@ export default function AddWorker() {
 
       if (resp.ok) {
         Alert.alert('Success', 'Worker added successfully');
-        setEmail('');
-        setPassword('');
-        setRole(role);
+        // reset form
+        setUsername('');
+        setPasscode('');
+        setRole('sales');
+        // optionally: navigate back or refresh list of workers
       } else {
+        // show helpful error message
         const msg =
           (data?.detail && Array.isArray(data.detail)
             ? data.detail.map((d: any) => d.msg ?? JSON.stringify(d)).join('\n')
@@ -120,47 +114,31 @@ export default function AddWorker() {
     <View style={styles.container}>
       <Text style={styles.title}>Add New Worker</Text>
 
-      <Text style={styles.label}>Email</Text>
+      <Text style={styles.label}>Username</Text>
       <TextInput
         style={styles.input}
-        placeholder="Enter worker email"
-        value={email}
-        onChangeText={setEmail}
+        placeholder="Enter worker username"
+        value={username}
+        onChangeText={setUsername}
         autoCapitalize="none"
       />
 
-      <Text style={styles.label}>Email</Text>
+      <Text style={styles.label}>Passcode</Text>
       <TextInput
         style={styles.input}
-        placeholder="Enter worker phone"
-        value={phone}
-        onChangeText={setPhone}
-        autoCapitalize="none"
-      />
-
-      <Text style={styles.label}>Password</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter worker password"
+        placeholder="Enter worker passcode"
         secureTextEntry
-        value={password}
-        onChangeText={setPassword}
+        value={passcode}
+        onChangeText={setPasscode}
       />
 
-      {roleOptionsArray.length > 1 ? (<>
-        <Text style={styles.label}>Position</Text>
+      <Text style={styles.label}>Position</Text>
+      <View style={styles.pickerContainer}>
         <Picker selectedValue={role} onValueChange={(value) => setRole(value)}>
-          {roleOptionsArray.map((opt) => (
-            <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
-          ))}
+          <Picker.Item label="Sales Representative" value="sales" />
+          <Picker.Item label="Manager" value="manager" />
         </Picker>
-      </>
-      ): (
-        <Text style={styles.label}>
-          Position: {roleOptionsArray[0]?.label || "N/A"}
-        </Text>
-      )}
-
+      </View>
 
       <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={isSaving}>
         {isSaving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveText}>Save Worker</Text>}
