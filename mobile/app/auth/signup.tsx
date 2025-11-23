@@ -32,7 +32,7 @@ export default function Signup() {
 
         try {
             const base = "https://swe-lab-1.onrender.com/auth/signup";
-            const endpoint = `${base}/${role}/`;
+            const endpoint = `${base}/${role}`;
 
             const payload: Record<string, any> = {
                 business_name: businessName,

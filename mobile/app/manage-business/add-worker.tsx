@@ -10,66 +10,75 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from '../../context/AuthContext'; // adjust path if needed
+import { useAuth } from '../context/AuthContext'; // adjust path if needed
 
 export default function AddWorker() {
-  const [username, setUsername] = useState('');
-  const [passcode, setPasscode] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [role, setRole] = useState('sales');
+  const [phone, setPhone] = useState('sales');
   const [isSaving, setIsSaving] = useState(false);
 
   // try to get token from AuthProvider if available
-  let tokenFromContext: string | null = null;
-  try {
-    // safe: if useAuth isn't available, this will throw — we catch below by try/catch
-    // If you definitely have AuthProvider, you can just: const { token } = useAuth();
-    // and remove the try-catch below.
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const auth = useAuth();
-    tokenFromContext = auth?.token ?? null;
-  } catch {
-    tokenFromContext = null;
-  }
-
-  const TOKEN_KEY = 'token'; // or 'userToken' if you use SecureStore / different key
+  const { user, token, signOut } = useAuth();
+  if (!token) signOut();
+  console.log(user);
+ 
   const WORKERS_URL = 'https://swe-lab-1.onrender.com/supplier/workers/'; // <- change to your API endpoint
 
-  const getToken = async () => {
-    if (tokenFromContext) return tokenFromContext;
-    const t = await AsyncStorage.getItem(TOKEN_KEY);
-    return t;
-  };
+  let roleOptionsArray: { label: string; value: string }[] = [];
+  if (user?.role === "OWNER") {
+    roleOptionsArray =
+      user.userType === "consumer"
+        ? [
+            { label: "Staff", value: "STAFF" },
+            { label: "Manager", value: "MANAGER" },
+          ]
+        : [
+            { label: "Sales Representative", value: "SALES" },
+            { label: "Manager", value: "MANAGER" },
+          ];
+  } 
+  else if (user?.role === "MANAGER") {
+    roleOptionsArray =
+      user.userType === "consumer"
+        ? [{ label: "Staff", value: "STAFF" }]
+        : [{ label: "Sales Representative", value: "SALES" }];
+  }
 
   const validate = () => {
-    if (!username.trim()) {
-      Alert.alert('Validation', 'Username is required');
+    if (!email.trim()) {
+      Alert.alert('Validation', 'Email is required');
       return false;
     }
-    if (!passcode) {
-      Alert.alert('Validation', 'Passcode is required');
+    if (!password) {
+      Alert.alert('Validation', 'Password is required');
       return false;
     }
-    // optional: add password rules, username format, etc.
+    if (!phone) {
+      Alert.alert('Validation', 'Phone is required');
+      return false;
+    }
     return true;
   };
 
   const handleSave = async () => {
     if (!validate()) return;
-
     setIsSaving(true);
     try {
-      const token = await getToken();
       if (!token) {
         Alert.alert('Auth', 'Not authenticated. Please log in.');
+        signOut();
         return;
       }
 
-      // Build payload — adapt field names to backend (username, password, role are common)
       const payload = {
-        username: username.trim(),
-        password: passcode,
-        role, // e.g. 'sales' or 'manager'
-        // add any extra fields required by your API here
+        username: email.trim(),
+        password: password,
+        role,
+        phone,
+        // consumer_id: user.id ? user.userType==="consumer" : null,
+        // supplier_id: user.id ? user.userType==="supplier" : null,
       };
 
       const resp = await fetch(WORKERS_URL, {
@@ -88,13 +97,10 @@ export default function AddWorker() {
 
       if (resp.ok) {
         Alert.alert('Success', 'Worker added successfully');
-        // reset form
-        setUsername('');
-        setPasscode('');
-        setRole('sales');
-        // optionally: navigate back or refresh list of workers
+        setEmail('');
+        setPassword('');
+        setRole(role);
       } else {
-        // show helpful error message
         const msg =
           (data?.detail && Array.isArray(data.detail)
             ? data.detail.map((d: any) => d.msg ?? JSON.stringify(d)).join('\n')
@@ -114,31 +120,47 @@ export default function AddWorker() {
     <View style={styles.container}>
       <Text style={styles.title}>Add New Worker</Text>
 
-      <Text style={styles.label}>Username</Text>
+      <Text style={styles.label}>Email</Text>
       <TextInput
         style={styles.input}
-        placeholder="Enter worker username"
-        value={username}
-        onChangeText={setUsername}
+        placeholder="Enter worker email"
+        value={email}
+        onChangeText={setEmail}
         autoCapitalize="none"
       />
 
-      <Text style={styles.label}>Passcode</Text>
+      <Text style={styles.label}>Email</Text>
       <TextInput
         style={styles.input}
-        placeholder="Enter worker passcode"
-        secureTextEntry
-        value={passcode}
-        onChangeText={setPasscode}
+        placeholder="Enter worker phone"
+        value={phone}
+        onChangeText={setPhone}
+        autoCapitalize="none"
       />
 
-      <Text style={styles.label}>Position</Text>
-      <View style={styles.pickerContainer}>
+      <Text style={styles.label}>Password</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Enter worker password"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
+
+      {roleOptionsArray.length > 1 ? (<>
+        <Text style={styles.label}>Position</Text>
         <Picker selectedValue={role} onValueChange={(value) => setRole(value)}>
-          <Picker.Item label="Sales Representative" value="sales" />
-          <Picker.Item label="Manager" value="manager" />
+          {roleOptionsArray.map((opt) => (
+            <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
+          ))}
         </Picker>
-      </View>
+      </>
+      ): (
+        <Text style={styles.label}>
+          Position: {roleOptionsArray[0]?.label || "N/A"}
+        </Text>
+      )}
+
 
       <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={isSaving}>
         {isSaving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveText}>Save Worker</Text>}
