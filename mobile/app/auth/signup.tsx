@@ -32,9 +32,10 @@ export default function Signup() {
 
         try {
             const base = "https://swe-lab-1.onrender.com/auth/signup";
-            const endpoint = `${base}/${role}/`;
+            const endpoint = `${base}/${role}`;
 
             const payload: Record<string, any> = {
+                business_name: businessName,
                 business_type: businessType,
                 address,
                 city,
@@ -43,12 +44,6 @@ export default function Signup() {
                 password,
                 phone_number: phoneNumber,
             };
-
-            if (role === 'supplier') {
-                payload.company_name = businessName;
-            } else {
-                payload.business_name = businessName;
-            }
 
             const response = await fetch(endpoint, {
                 method: "POST",
