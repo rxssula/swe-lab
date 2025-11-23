@@ -100,7 +100,7 @@ export function ChatManagement({ userType }: ChatManagementProps) {
   })
 
   // Fetch user presence
-  const { data: presence = [] } = useQuery({
+  const { data: presence } = useQuery({
     queryKey: ['userPresence', selectedThread?.link_id],
     queryFn: () => getUserPresence(selectedThread!.link_id),
     enabled: !!selectedThread,
@@ -109,15 +109,29 @@ export function ChatManagement({ userType }: ChatManagementProps) {
 
   // Update online users from presence data
   useEffect(() => {
-    if (presence) {
-      const online = new Set<string>()
-      presence.forEach((p: UserPresence) => {
-        if (p.is_online) {
-          online.add(p.user_id)
+    if (!presence) return
+
+    const online = new Set<string>()
+    presence.forEach((p: UserPresence) => {
+      if (p.is_online) {
+        online.add(p.user_id)
+      }
+    })
+
+    setOnlineUsers((prev) => {
+      if (prev.size === online.size) {
+        let isSame = true
+        prev.forEach((id) => {
+          if (!online.has(id)) {
+            isSame = false
+          }
+        })
+        if (isSame) {
+          return prev
         }
-      })
-      setOnlineUsers(online)
-    }
+      }
+      return online
+    })
   }, [presence])
 
   // WebSocket connection
