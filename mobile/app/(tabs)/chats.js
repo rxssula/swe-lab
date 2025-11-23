@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import {
-  ActivityIndicator,
   FlatList,
   RefreshControl,
   StyleSheet,
@@ -8,14 +7,13 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { useFocusEffect } from '@react-navigation/native'
 
 import { useAuth } from '../context/AuthContext'
-import { getChatThreads } from '../lib/api/chat'
-import { getLinkRequests, getMyLinks } from '../lib/api/links'
 
 const formatDistanceToNow = (date) => {
   if (!date) return '—'
@@ -56,18 +54,47 @@ export default function ChatsList() {
         setRefreshing(true)
       }
       try {
-        const [threadResponse, linkResponse] = await Promise.all([
-          getChatThreads(token),
-          userType === 'consumer'
-            ? getMyLinks(token, 'accepted')
-            : getLinkRequests(token, 'accepted'),
-        ])
-        setThreads(threadResponse)
-        setLinks(linkResponse)
+        // Fetch chat threads
+        const threadsResp = await fetch('https://swe-lab-1.onrender.com/chat/threads', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+        })
+
+        if (!threadsResp.ok) {
+          throw new Error('Failed to fetch chat threads')
+        }
+
+        const threadsData = await threadsResp.json()
+
+        // Fetch my links to get names (optional - don't fail if this errors)
+        let linksData = []
+        try {
+          const linksResp = await fetch('https://swe-lab-1.onrender.com/links/my-links', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: 'application/json',
+            },
+          })
+
+          if (linksResp.ok) {
+            linksData = await linksResp.json()
+          } else {
+            console.warn('Failed to fetch links:', linksResp.status)
+          }
+        } catch (linkErr) {
+          console.warn('Error fetching links (non-critical):', linkErr)
+        }
+
+        setThreads(Array.isArray(threadsData) ? threadsData : [])
+        setLinks(Array.isArray(linksData) ? linksData : [])
         setError(null)
       } catch (err) {
         console.error('Failed to load chat threads', err)
-        setError(err instanceof Error ? err.message : 'Failed to load chats')
+        const errorMsg = err instanceof Error ? err.message : 'Failed to load chats'
+        setError(errorMsg)
+        Alert.alert('Error', errorMsg)
       } finally {
         setLoading(false)
         setRefreshing(false)
@@ -79,6 +106,13 @@ export default function ChatsList() {
   useFocusEffect(
     useCallback(() => {
       fetchData()
+
+      // Also refresh after a short delay to catch any backend updates
+      const timeout = setTimeout(() => {
+        fetchData(false) // Use false to avoid showing loading spinner
+      }, 1000)
+
+      return () => clearTimeout(timeout)
     }, [fetchData]),
   )
 
@@ -187,32 +221,27 @@ export default function ChatsList() {
         </TouchableOpacity>
       </View>
 
-      {loading ? (
-        <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color="#2563eb" />
-          <Text style={styles.loadingText}>Loading chats...</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredThreads}
-          keyExtractor={(item) => item.link_id}
-          renderItem={renderChatRow}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-          ListEmptyComponent={
+      <FlatList
+        data={filteredThreads}
+        keyExtractor={(item) => item.id}
+        renderItem={renderChatRow}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        refreshControl={<RefreshControl refreshing={refreshing || loading} onRefresh={handleRefresh} />}
+        ListEmptyComponent={
+          !loading ? (
             <View style={styles.centerContent}>
               <Text style={styles.emptyText}>
                 {error
                   ? error
-                  : 'No chat threads yet. Link with a partner to start a conversation.'}
+                  : 'No chat threads yet. Start conversations with your linked partners.'}
               </Text>
             </View>
-          }
-          contentContainerStyle={
-            filteredThreads.length === 0 ? styles.listEmptyContainer : undefined
-          }
-        />
-      )}
+          ) : null
+        }
+        contentContainerStyle={
+          filteredThreads.length === 0 ? styles.listEmptyContainer : undefined
+        }
+      />
     </View>
   )
 }

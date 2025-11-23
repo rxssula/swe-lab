@@ -24,16 +24,23 @@ import { useFocusEffect } from '@react-navigation/native'
 import * as DocumentPicker from 'expo-document-picker'
 
 import { useAuth } from '../context/AuthContext'
-import {
-  getMessages,
-  sendMessage,
-  sendMessageWithFiles,
-  markMessagesAsRead,
-  getWebSocketUrl,
-  getUserPresence,
-  type ChatMessage,
-} from '../lib/api/chat'
-import { getCurrentUser } from '../lib/api/auth'
+
+interface ChatMessage {
+  id: string
+  thread_id: string
+  sender_id: string
+  sender_type: string
+  message_text: string
+  message_type: string
+  product_id?: string
+  sent_at: string
+  read_at?: string | null
+  attachments: Array<{
+    id: string
+    file_url: string
+    file_name: string
+  }>
+}
 
 const formatDistanceToNow = (date: string) => {
   const then = new Date(date)
@@ -64,7 +71,7 @@ const sortMessages = (items: ChatMessage[]) =>
   )
 
 export default function ChatThreadScreen() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const router = useRouter()
   const { linkId, name, counterpartId } = useLocalSearchParams<{
     linkId?: string
@@ -72,52 +79,46 @@ export default function ChatThreadScreen() {
     counterpartId?: string
   }>()
 
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [messageText, setMessageText] = useState('')
   const [selectedFiles, setSelectedFiles] = useState<PendingFile[]>([])
-  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set())
-  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const wsRef = useRef<WebSocket | null>(null)
-  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const flatListRef = useRef<FlatList<ChatMessage>>(null)
 
   const otherPartyName = name || 'Chat'
-  const isCounterpartOnline = counterpartId
-    ? onlineUsers.has(String(counterpartId))
-    : false
+  const currentUserId = user?.id ? String(user.id) : null
 
+  // Debug: Log user ID on component mount
   useEffect(() => {
-    let active = true
-    if (!token) return
-    ;(async () => {
-      try {
-        const me = await getCurrentUser(token)
-        if (active) {
-          setCurrentUserId(me.id)
-        }
-      } catch (err) {
-        console.error('Failed to load current user', err)
-        if (active) {
-          setError(err instanceof Error ? err.message : 'Failed to load user')
-        }
-      }
-    })()
-    return () => {
-      active = false
+    if (__DEV__) {
+      console.log('Chat Screen - Current User ID:', currentUserId)
+      console.log('Chat Screen - User object:', user)
     }
-  }, [token])
+  }, [currentUserId, user])
 
   const loadMessages = useCallback(async () => {
     if (!token || !linkId) return
     setLoading(true)
     try {
-      const data = await getMessages(token, linkId as string, 100, 0)
-      setMessages(sortMessages(data))
+      const resp = await fetch(
+        `https://swe-lab-1.onrender.com/chat/links/${linkId}/messages`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+        }
+      )
+
+      if (!resp.ok) {
+        throw new Error('Failed to load messages')
+      }
+
+      const data = await resp.json()
+      setMessages(sortMessages(Array.isArray(data) ? data : []))
       setError(null)
     } catch (err) {
       console.error('Failed to load messages', err)
@@ -133,106 +134,58 @@ export default function ChatThreadScreen() {
     }, [loadMessages]),
   )
 
-  const refreshPresence = useCallback(async () => {
-    if (!token || !linkId) return
-    try {
-      const presence = await getUserPresence(token, linkId as string)
-      const nextOnline = new Set<string>()
-      presence.forEach((entry) => {
-        if (entry.is_online) {
-          nextOnline.add(entry.user_id)
-        }
-      })
-      setOnlineUsers(nextOnline)
-    } catch (err) {
-      console.warn('Failed to load presence', err)
-    }
-  }, [token, linkId])
-
+  // Auto-refresh messages every 5 seconds to get new messages
   useEffect(() => {
-    refreshPresence()
-    const interval = setInterval(refreshPresence, 30_000)
+    const interval = setInterval(() => {
+      if (!loading) {
+        loadMessages()
+      }
+    }, 5000)
     return () => clearInterval(interval)
-  }, [refreshPresence])
+  }, [loadMessages, loading])
 
-  const handleSocketMessage = useCallback((payload: any) => {
-    if (!payload?.type) return
-    if (payload.type === 'new_message' && payload.data) {
-      setMessages((prev) => {
-        if (prev.some((msg) => msg.id === payload.data.id)) {
-          return prev
-        }
-        return sortMessages([...prev, payload.data])
-      })
-    } else if (payload.type === 'messages_read' && payload.data) {
-      setMessages((prev) =>
-        prev.map((msg) =>
-          payload.data.message_ids?.includes(msg.id)
-            ? { ...msg, read_at: payload.data.read_at }
-            : msg,
-        ),
-      )
-    } else if (payload.type === 'typing' && payload.data) {
-      setTypingUsers((prev) => {
-        const next = new Set(prev)
-        if (payload.data.is_typing) {
-          next.add(payload.data.user_id)
-        } else {
-          next.delete(payload.data.user_id)
-        }
-        return next
-      })
-    } else if (payload.type === 'user_online' && payload.data) {
-      setOnlineUsers((prev) => new Set(prev).add(payload.data.user_id))
-    } else if (payload.type === 'user_offline' && payload.data) {
-      setOnlineUsers((prev) => {
-        const next = new Set(prev)
-        next.delete(payload.data.user_id)
-        return next
-      })
-    }
-  }, [])
-
+  // Mark messages as read when viewing them
   useEffect(() => {
-    if (!token || !linkId) return
-    const ws = new WebSocket(getWebSocketUrl(linkId as string, token))
-    wsRef.current = ws
+    const markAsRead = async () => {
+      if (!token || !linkId || !currentUserId || messages.length === 0) return
 
-    ws.onmessage = (event) => {
+      // Find unread messages from other users
+      const unreadMessages = messages.filter(
+        (msg) => msg.sender_id !== currentUserId && !msg.read_at
+      )
+
+      if (unreadMessages.length === 0) return
+
       try {
-        const payload = JSON.parse(event.data)
-        handleSocketMessage(payload)
+        // Mark each unread message as read
+        await Promise.all(
+          unreadMessages.map(async (msg) => {
+            try {
+              await fetch(
+                `https://swe-lab-1.onrender.com/chat/messages/${msg.id}/read`,
+                {
+                  method: 'PUT',
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: 'application/json',
+                  },
+                }
+              )
+            } catch (err) {
+              console.warn('Failed to mark message as read:', err)
+            }
+          })
+        )
+
+        // Refresh messages to get updated read status
+        setTimeout(() => loadMessages(), 500)
       } catch (err) {
-        console.warn('Failed to parse WS message', err)
+        console.warn('Error marking messages as read:', err)
       }
     }
 
-    ws.onerror = (event) => {
-      console.warn('WebSocket error', event)
-    }
-
-    ws.onclose = () => {
-      wsRef.current = null
-      setTypingUsers(new Set())
-    }
-
-    return () => {
-      ws.close()
-      wsRef.current = null
-    }
-  }, [token, linkId, handleSocketMessage])
-
-  useEffect(() => {
-    if (!currentUserId || !token) return
-    const unread = messages.filter(
-      (msg) => msg.sender_id !== currentUserId && !msg.read_at,
-    )
-    if (unread.length === 0) return
-    markMessagesAsRead(
-      token,
-      unread.map((msg) => msg.id),
-    ).catch((err) => console.warn('Failed to mark messages as read', err))
-  }, [messages, currentUserId, token])
+    markAsRead()
+  }, [messages, currentUserId, token, linkId, loadMessages])
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -243,29 +196,6 @@ export default function ChatThreadScreen() {
 
   const appendMessageLocally = (message: ChatMessage) => {
     setMessages((prev) => sortMessages([...prev, message]))
-  }
-
-  const sendTypingEvent = (type: 'typing_start' | 'typing_stop') => {
-    if (!wsRef.current) return
-    try {
-      wsRef.current.send(JSON.stringify({ type, data: {} }))
-    } catch (err) {
-      console.warn('Failed to send typing event', err)
-    }
-  }
-
-  const handleTyping = () => {
-    if (!wsRef.current) return
-    if (!typingTimeoutRef.current) {
-      sendTypingEvent('typing_start')
-    }
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current)
-    }
-    typingTimeoutRef.current = setTimeout(() => {
-      sendTypingEvent('typing_stop')
-      typingTimeoutRef.current = null
-    }, 2500)
   }
 
   const handlePickFiles = async () => {
@@ -313,29 +243,43 @@ export default function ChatThreadScreen() {
 
     setSending(true)
     try {
-      let response: ChatMessage | null = null
-      if (selectedFiles.length > 0) {
-        response = await sendMessageWithFiles(
-          token,
-          linkId as string,
-          trimmed || 'Attachment',
-          selectedFiles.map((file) => ({
-            uri: file.uri,
-            name: file.name,
-            type: file.mimeType || 'application/octet-stream',
-          })),
-        )
-      } else {
-        response = await sendMessage(token, linkId as string, {
-          message_text: trimmed,
-          message_type: 'TEXT',
-        })
+      const requestBody: any = {
+        message_text: trimmed,
+        message_type: 'TEXT',
       }
+
+      // Add attachment URLs if files are selected
+      if (selectedFiles.length > 0) {
+        requestBody.attachment_urls = selectedFiles.map(f => f.uri)
+      }
+
+      const resp = await fetch(
+        `https://swe-lab-1.onrender.com/chat/links/${linkId}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        }
+      )
+
+      if (!resp.ok) {
+        throw new Error('Failed to send message')
+      }
+
+      const response = await resp.json()
       if (response) {
         appendMessageLocally(response)
       }
+
       setMessageText('')
       setSelectedFiles([])
+
+      // Refresh messages to get the latest
+      setTimeout(() => loadMessages(), 500)
     } catch (err) {
       console.error('Failed to send message', err)
       Alert.alert('Send failed', err instanceof Error ? err.message : 'Try again')
@@ -346,6 +290,17 @@ export default function ChatThreadScreen() {
 
   const renderMessage = ({ item }: { item: ChatMessage }) => {
     const isOwn = item.sender_id === currentUserId
+
+    // Debug logging
+    if (__DEV__) {
+      console.log('Message:', {
+        sender_id: item.sender_id,
+        currentUserId,
+        isOwn,
+        text: item.message_text?.substring(0, 20)
+      })
+    }
+
     const bubbleStyles = [
       styles.messageBubble,
       isOwn ? styles.ownBubble : styles.otherBubble,
@@ -403,8 +358,6 @@ export default function ChatThreadScreen() {
     )
     }
 
-  const typingIndicator = useMemo(() => typingUsers.size > 0, [typingUsers])
-
   if (!token || !linkId) {
     return (
       <View style={styles.centerContent}>
@@ -432,17 +385,12 @@ export default function ChatThreadScreen() {
             {otherPartyName}
           </Text>
           <Text style={styles.headerSubtitle}>
-            {isCounterpartOnline ? 'Online' : 'Offline'}
+            {messages.length} {messages.length === 1 ? 'message' : 'messages'}
           </Text>
         </View>
       </View>
 
-      {loading ? (
-        <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color="#2563eb" />
-          <Text style={styles.infoText}>Loading conversation...</Text>
-        </View>
-      ) : error ? (
+      {error ? (
         <View style={styles.centerContent}>
           <Text style={styles.infoText}>{error}</Text>
           <TouchableOpacity onPress={loadMessages} style={styles.retryButton}>
@@ -450,22 +398,20 @@ export default function ChatThreadScreen() {
           </TouchableOpacity>
         </View>
       ) : (
-        <>
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        keyExtractor={(item) => item.id}
-            renderItem={renderMessage}
-        contentContainerStyle={styles.messagesList}
-            ListFooterComponent={
-              typingIndicator ? (
-                <View style={styles.typingBubble}>
-                  <Text style={styles.typingText}>Typing…</Text>
-                </View>
-              ) : null
-            }
-          />
-        </>
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={renderMessage}
+          contentContainerStyle={styles.messagesList}
+          ListEmptyComponent={
+            loading ? (
+              <View style={styles.centerContent}>
+                <ActivityIndicator size="large" color="#2563eb" />
+              </View>
+            ) : null
+          }
+        />
       )}
 
       {selectedFiles.length > 0 && (
@@ -496,10 +442,7 @@ export default function ChatThreadScreen() {
           style={styles.textInput}
           placeholder="Type a message..."
           value={messageText}
-          onChangeText={(value) => {
-            setMessageText(value)
-            handleTyping()
-          }}
+          onChangeText={setMessageText}
           multiline
           placeholderTextColor="#9ca3af"
         />
@@ -584,15 +527,6 @@ const styles = StyleSheet.create({
   metaOwn: { color: '#bfdbfe' },
   metaOther: { color: '#6b7280' },
   metaIcon: { marginLeft: 4 },
-  typingBubble: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#e5e7eb',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginBottom: 10,
-  },
-  typingText: { color: '#374151', fontSize: 13 },
   selectedFilesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',

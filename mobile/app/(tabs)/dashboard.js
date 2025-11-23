@@ -39,9 +39,10 @@ function SupplierDashboard({ token }) {
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [consumerRequests, setConsumerRequests] = useState([]);
     const [showRequestsModal, setShowRequestsModal] = useState(false);
+    const [processingRequestId, setProcessingRequestId] = useState(null);
 
-    const PRODUCTS_URL = "https://swe-lab-1.onrender.com/supplier/products/";
-    const CONSUMER_REQUESTS_URL = "https://swe-lab-1.onrender.com/supplier/consumer-requests/";
+    const PRODUCTS_URL = "https://swe-lab-1.onrender.com/products/my-products";
+    const CONSUMER_REQUESTS_URL = "https://swe-lab-1.onrender.com/links/requests";
 
     const fetchProducts = async () => {
         if (!token) return;
@@ -80,6 +81,111 @@ function SupplierDashboard({ token }) {
         }
     };
 
+    const handleAcceptRequest = async (requestId) => {
+        if (!token || !requestId) return;
+
+        setProcessingRequestId(requestId);
+        try {
+            const url = `https://swe-lab-1.onrender.com/links/requests/${requestId}/accept`;
+            const resp = await fetch(url, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: "application/json",
+                },
+            });
+
+            if (resp.ok) {
+                Alert.alert("Success", "Connection request accepted!");
+                await fetchConsumerRequests();
+            } else {
+                const text = await resp.text().catch(() => null);
+                console.warn("Accept request failed", resp.status, text);
+                Alert.alert("Error", "Failed to accept request.");
+            }
+        } catch (err) {
+            console.error("Accept request error", err);
+            Alert.alert("Network Error", "Could not accept request. Try again.");
+        } finally {
+            setProcessingRequestId(null);
+        }
+    };
+
+    const handleRejectRequest = async (requestId) => {
+        if (!token || !requestId) return;
+
+        setProcessingRequestId(requestId);
+        try {
+            const url = `https://swe-lab-1.onrender.com/links/requests/${requestId}/reject`;
+            const resp = await fetch(url, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: "application/json",
+                },
+            });
+            console.log(resp)
+
+            if (resp.ok) {
+                Alert.alert("Success", "Connection request rejected.");
+                await fetchConsumerRequests();
+            } else {
+                const text = await resp.text().catch(() => null);
+                console.warn("Reject request failed", resp.status, text);
+                Alert.alert("Error", "Failed to reject request.");
+            }
+        } catch (err) {
+            console.error("Reject request error", err);
+            Alert.alert("Network Error", "Could not reject request. Try again.");
+        } finally {
+            setProcessingRequestId(null);
+        }
+    };
+
+    const handleDeleteProduct = async (productId) => {
+        if (!token || !productId) return;
+
+        Alert.alert(
+            "Delete Product",
+            "Are you sure you want to delete this product? This action cannot be undone.",
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel",
+                },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            const url = `https://swe-lab-1.onrender.com/products/${productId}`;
+                            const resp = await fetch(url, {
+                                method: "DELETE",
+                                headers: {
+                                    Authorization: `Bearer ${token}`,
+                                    Accept: "application/json",
+                                },
+                            });
+
+                            if (resp.ok) {
+                                Alert.alert("Success", "Product deleted successfully!");
+                                setProducts(prev => prev.filter(p => p.id !== productId));
+                                setSelectedProduct(null);
+                            } else {
+                                const text = await resp.text().catch(() => null);
+                                console.warn("Delete product failed", resp.status, text);
+                                Alert.alert("Error", "Failed to delete product.");
+                            }
+                        } catch (err) {
+                            console.error("Delete product error", err);
+                            Alert.alert("Network Error", "Could not delete product. Try again.");
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     useEffect(() => {
         fetchProducts();
         fetchConsumerRequests();
@@ -100,7 +206,10 @@ function SupplierDashboard({ token }) {
         );
     }, [products, displayQuery]);
 
-    const renderProduct = ({ item }) => (
+    const renderProduct = ({ item }) => {
+        console.log(item);
+        return (
+        
         <TouchableOpacity
             style={styles.card}
             onPress={() => setSelectedProduct(item)}
@@ -110,19 +219,50 @@ function SupplierDashboard({ token }) {
                 Quantity: {item.quantity} | Price: {item.price}
             </Text>
         </TouchableOpacity>
-    );
+    )};
 
-    const renderConsumerRequest = ({ item }) => (
-        <View style={styles.consumerCard} key={item.id}>
-            <Text style={{ fontWeight: "600", fontSize: 16 }}>{item.name}</Text>
-            <Text style={{ color: "#6b7280" }}>{item.description}</Text>
-            {item.products?.map((p) => (
-                <Text key={p.id} style={{ color: "#374151", marginTop: 4 }}>
-                    {p.name} - Qty: {p.quantity}, Total: {p.totalPrice}, Date: {p.date}
+    const renderConsumerRequest = ({ item }) => {
+        const isProcessing = processingRequestId === item.id;
+        const requestDate = item.requested_at
+            ? new Date(item.requested_at).toLocaleDateString()
+            : "N/A";
+
+        return (
+            <View style={styles.consumerCard} key={item.id}>
+                <Text style={{ fontWeight: "600", fontSize: 16 }}>
+                    {item.consumer_name || "Unknown Consumer"}
                 </Text>
-            ))}
-        </View>
-    );
+                <Text style={{ color: "#6b7280", marginTop: 4 }}>
+                    Status: {item.status}
+                </Text>
+                <Text style={{ color: "#6b7280", marginTop: 2 }}>
+                    Requested: {requestDate}
+                </Text>
+
+                <View style={{ flexDirection: "row", marginTop: 12, gap: 8 }}>
+                    <TouchableOpacity
+                        style={[styles.acceptBtn, isProcessing && { opacity: 0.5 }]}
+                        onPress={() => handleAcceptRequest(item.id)}
+                        disabled={isProcessing}
+                    >
+                        {isProcessing ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                            <Text style={{ color: "#fff", fontWeight: "600" }}>Accept</Text>
+                        )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.rejectBtn, isProcessing && { opacity: 0.5 }]}
+                        onPress={() => handleRejectRequest(item.id)}
+                        disabled={isProcessing}
+                    >
+                        <Text style={{ color: "#fff", fontWeight: "600" }}>Reject</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    };
 
     return (
         <SafeAreaView style={styles.safe}>
@@ -143,9 +283,9 @@ function SupplierDashboard({ token }) {
                         onPress={() => setShowRequestsModal(true)}
                     >
                         <Ionicons name="people-outline" size={28} color="#111" />
-                        {consumerRequests.length > 0 && (
+                        {consumerRequests.filter(r => r.status === 'pending').length > 0 && (
                             <View style={styles.badge}>
-                                <Text style={{ color: "#fff", fontSize: 12 }}>{consumerRequests.length}</Text>
+                                <Text style={{ color: "#fff", fontSize: 12 }}>{consumerRequests.filter(r => r.status === 'pending').length}</Text>
                             </View>
                         )}
                     </TouchableOpacity>
@@ -174,19 +314,16 @@ function SupplierDashboard({ token }) {
                     <View style={styles.modalContainer}>
                         <View style={styles.modalBox}>
                             <Text style={styles.modalTitle}>{selectedProduct?.name}</Text>
-                            <Text style={styles.modalText}>Category: {selectedProduct?.category}</Text>
-                            <Text style={styles.modalText}>Quantity: {selectedProduct?.quantity}</Text>
-                            <Text style={styles.modalText}>MOQ: {selectedProduct?.minOrderQuantity}</Text>
-                            <Text style={styles.modalText}>Price: {selectedProduct?.price}</Text>
+                            <Text style={styles.modalText}>Category: {selectedProduct?.category_name}</Text>
+                            <Text style={styles.modalText}>Stock level: {selectedProduct?.stock_level}</Text>
+                            <Text style={styles.modalText}>MOQ: {selectedProduct?.minimum_order_quantity}</Text>
+                            <Text style={styles.modalText}>Price per unit: {selectedProduct?.price_per_unit}</Text>
 
                             <TouchableOpacity
-                                style={[styles.connectBtn, { marginTop: 20 }]}
-                                onPress={() => {
-                                    Alert.alert("Edit Product", "Here you can implement editing logic.");
-                                    setSelectedProduct(null);
-                                }}
+                                style={[styles.deleteBtn, { marginTop: 20 }]}
+                                onPress={() => handleDeleteProduct(selectedProduct?.id)}
                             >
-                                <Text style={styles.connectText}>Edit</Text>
+                                <Text style={styles.connectText}>Delete</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
@@ -210,10 +347,10 @@ function SupplierDashboard({ token }) {
                         <View style={[styles.modalBox, { maxHeight: "80%" }]}>
                             <Text style={styles.modalTitle}>Consumer Requests</Text>
                             <ScrollView style={{ marginTop: 12 }}>
-                                {consumerRequests.length === 0 ? (
-                                    <Text style={{ color: "#6b7280" }}>No requests yet.</Text>
+                                {consumerRequests.filter(r => r.status === 'pending').length === 0 ? (
+                                    <Text style={{ color: "#6b7280" }}>No pending requests.</Text>
                                 ) : (
-                                    consumerRequests.map(renderConsumerRequest)
+                                    consumerRequests.filter(r => r.status === 'pending').map((item) => renderConsumerRequest({ item }))
                                 )}
                             </ScrollView>
 
@@ -236,192 +373,254 @@ function SupplierDashboard({ token }) {
    ============================================================ */
 
 function ConsumerDashboard({ token }) {
-    const router = useRouter();
+  const router = useRouter();
 
-    const COMPANIES_URL = "https://swe-lab-1.onrender.com/consumer/companies/";
-    const CONNECT_URL = "https://swe-lab-1.onrender.com/consumer/connect/";
+  const COMPANIES_URL = "https://swe-lab-1.onrender.com/suppliers/search"; 
+  const CONNECT_URL = "https://swe-lab-1.onrender.com/links/request";
 
-    const [companies, setCompanies] = useState([]);
-    const [query, setQuery] = useState("");
-    const [displayQuery, setDisplayQuery] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [refreshing, setRefreshing] = useState(false);
-    const [selectedCompany, setSelectedCompany] = useState(null);
-    const [sendingConnect, setSendingConnect] = useState(false);
+  const [companies, setCompanies] = useState([]); 
+  const [query, setQuery] = useState("");
+  const [displayQuery, setDisplayQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-    const fetchCompanies = async () => {
-        if (!token) return;
-        setLoading(true);
-        try {
-            const headers = { Accept: "application/json" };
-            if (token) headers.Authorization = `Bearer ${token}`;
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [sendingConnect, setSendingConnect] = useState(false);
 
-            const resp = await fetch(COMPANIES_URL, { headers });
-            const text = await resp.text();
-            let data = null;
-            try {
-                data = text ? JSON.parse(text) : null;
-            } catch {}
+  useEffect(() => {
+    const t = setTimeout(() => setDisplayQuery(query.trim()), 300);
+    return () => clearTimeout(t);
+  }, [query]);
 
-            if (resp.ok) {
-                if (Array.isArray(data)) setCompanies(data);
-                else if (data?.results) setCompanies(data.results);
-                else setCompanies([]);
-            } else {
-                setCompanies([]);
-            }
-        } catch {
-            setCompanies([]);
-        } finally {
-            setLoading(false);
+  useEffect(() => {
+    const doSearch = async () => {
+      if (!displayQuery) {
+        setCompanies([]);
+        return;
+      }
+      if (!token) {
+        Alert.alert("Auth", "You must be logged in to search.");
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const headers = { Accept: "application/json" };
+        if (token) headers.Authorization = `Bearer ${token}`;
+
+        const url = `${COMPANIES_URL}?search=${encodeURIComponent(displayQuery)}`;
+        const resp = await fetch(url, { headers });
+        const text = await resp.text();
+        let data = null;
+        try { data = text ? JSON.parse(text) : null; } catch {}
+
+        if (!resp.ok) {
+          console.warn("Search error", resp.status, data ?? text);
+          Alert.alert("Error", "Search failed.");
+          setCompanies([]);
+          return;
         }
-    };
 
-    useEffect(() => {
-        fetchCompanies();
-    }, [token]);
-
-    useEffect(() => {
-        const t = setTimeout(() => setDisplayQuery(query.trim()), 300);
-        return () => clearTimeout(t);
-    }, [query]);
-
-    const filtered = useMemo(() => {
-        if (!displayQuery) return companies;
-        const q = displayQuery.toLowerCase();
-        return companies.filter((c) => {
-            const name = (c.name ?? c.company_name ?? "").toLowerCase();
-            const desc = (c.description ?? c.short ?? "").toLowerCase();
-            return name.includes(q) || desc.includes(q);
-        });
-    }, [companies, displayQuery]);
-
-    const onRefresh = async () => {
-        setRefreshing(true);
-        await fetchCompanies();
-        setRefreshing(false);
-    };
-
-    const handleConnect = async (company) => {
-        if (!token) return;
-        setSendingConnect(true);
-        try {
-            const resp = await fetch(CONNECT_URL, {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ company_id: company.id }),
-            });
-            if (resp.ok) {
-                Alert.alert("Request Sent", "Your connection request was sent.");
-            } else {
-                Alert.alert("Failed", "Could not send request.");
-            }
-        } catch (err) {
-            Alert.alert("Network Error", "Try again.");
-        } finally {
-            setSendingConnect(false);
+        // Expecting array like:
+        // [{ supplier_id, business_name, business_type, city, country, product_count_in_category, total_active_products, is_linked, link_status }]
+        if (Array.isArray(data)) {
+          // map to consistent UI model
+          const mapped = data.map((c) => ({
+            id: c.supplier_id ?? c.id ?? null,
+            name: c.business_name ?? c.name ?? "—",
+            type: c.business_type ?? "",
+            city: c.city ?? "",
+            country: c.country ?? "",
+            productsInCategory: c.product_count_in_category ?? 0,
+            totalActive: c.total_active_products ?? 0,
+            is_linked: !!c.is_linked,
+            link_status: c.link_status ?? null,
+            // keep original raw to pass along if needed
+            raw: c,
+          })).filter(Boolean);
+          setCompanies(mapped);
+        } else {
+          setCompanies([]);
         }
+      } catch (err) {
+        console.error("searchCompanies error", err);
+        Alert.alert("Network error", "Failed to search companies. Check your connection.");
+        setCompanies([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    const renderCompany = ({ item }) => (
-        <TouchableOpacity style={styles.card} onPress={() => setSelectedCompany(item)}>
-            <Text style={styles.title}>{item.name ?? item.company_name}</Text>
-            <Text style={{ color: "#6b7280", marginTop: 6 }}>
-                {item.description ?? item.short}
-            </Text>
+    doSearch();
+  }, [displayQuery, token]);
 
-            <TouchableOpacity
-                style={[styles.connectBtn, { marginTop: 12 }]}
-                onPress={() => handleConnect(item)}
-            >
-                <Text style={styles.connectText}>Connect</Text>
+  const onRefresh = async () => {
+    if (!displayQuery) return;
+    setRefreshing(true);
+    try {
+      // reuse search effect by calling directly
+      const headers = { Accept: "application/json" };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const url = `${COMPANIES_URL}?search=${encodeURIComponent(displayQuery)}`;
+      const resp = await fetch(url, { headers });
+      const data = await resp.json().catch(() => null);
+      if (Array.isArray(data)) {
+        const mapped = data.map((c) => ({
+          id: c.supplier_id ?? c.id ?? null,
+          name: c.business_name ?? c.name ?? "—",
+          type: c.business_type ?? "",
+          city: c.city ?? "",
+          country: c.country ?? "",
+          productsInCategory: c.product_count_in_category ?? 0,
+          totalActive: c.total_active_products ?? 0,
+          is_linked: !!c.is_linked,
+          link_status: c.link_status ?? null,
+          raw: c,
+        })).filter(Boolean);
+        setCompanies(mapped);
+      } else {
+        setCompanies([]);
+      }
+    } catch (err) {
+      console.error("refresh error", err);
+      Alert.alert("Network error", "Failed to refresh results.");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleConnect = async (company) => {
+    if (!token) {
+      Alert.alert("Auth", "Please login to send connect requests.");
+      return;
+    }
+    if (!company?.id) {
+      Alert.alert("Error", "Invalid company selected.");
+      return;
+    }
+
+    setSendingConnect(true);
+    try {
+      const resp = await fetch(CONNECT_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ supplier_id: company.id }),
+      });
+      if (resp.ok) {
+        Alert.alert("Request Sent", "Your connection request was sent.");
+        // optionally update the single company object as linked
+        setCompanies(prev => prev.map(c => c.id === company.id ? { ...c, is_linked: true } : c));
+      } else {
+        const text = await resp.text().catch(() => null);
+        console.warn("connect failed", resp.status, text);
+        Alert.alert("Failed", "Could not send request.");
+      }
+    } catch (err) {
+      console.error("connect error", err);
+      Alert.alert("Network Error", "Try again.");
+    } finally {
+      setSendingConnect(false);
+    }
+  };
+
+  const renderCompany = ({ item }) => (
+    <TouchableOpacity style={styles.card} onPress={() => setSelectedCompany(item)} activeOpacity={0.85}>
+      <Text style={styles.title}>{item.name}</Text>
+      <Text style={{ color: "#6b7280", marginTop: 6 }}>{item.type} • {item.city}{item.country ? `, ${item.country}` : ""}</Text>
+      <Text style={{ color: "#6b7280", marginTop: 6 }}>Products in category: {item.productsInCategory} • Active products: {item.totalActive}</Text>
+
+      <TouchableOpacity
+        style={[styles.connectBtn, { marginTop: 12 }]}
+        onPress={() => handleConnect(item)}
+        disabled={sendingConnect || item.is_linked}
+      >
+        <Text style={styles.connectText}>{item.is_linked ? (item.link_status || "Linked") : "Connect"}</Text>
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <View style={{ padding: 16 }}>
+        {/* Header */}
+        <View style={styles.headerRow}>
+          <Text style={styles.headerTitle}>Companies</Text>
+
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <TouchableOpacity onPress={() => setDisplayQuery(prev => prev)} style={{ marginRight: 18 }}>
+              {/* re-run search by re-setting (noop) or you can call fetch directly */}
+              <Ionicons name="refresh-outline" size={24} color="#111" />
             </TouchableOpacity>
-        </TouchableOpacity>
-    );
 
-    return (
-        <SafeAreaView style={styles.safe}>
-            <View style={{ padding: 16 }}>
+            <TouchableOpacity onPress={() => router.push("/components/cart")}>
+              <Ionicons name="cart-outline" size={26} color="#111" />
+            </TouchableOpacity>
+          </View>
+        </View>
 
-                {/* Header with Refresh & Cart */}
-                <View style={styles.headerRow}>
-                    <Text style={styles.headerTitle}>Companies</Text>
+        {/* Search */}
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search companies by name, city or product..."
+          style={styles.search}
+        />
 
-                    <View style={{ flexDirection: "row", alignItems: "center" }}>
-                        <TouchableOpacity onPress={fetchCompanies} style={{ marginRight: 18 }}>
-                            <Ionicons name="refresh-outline" size={24} color="#111" />
-                        </TouchableOpacity>
+        {/* Results */}
+        {loading ? (
+          <View style={{ marginTop: 24 }}>
+            <ActivityIndicator size="large" />
+          </View>
+        ) : (
+          <FlatList
+            data={companies}
+            keyExtractor={(i) => String(i.id)}
+            renderItem={renderCompany}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            contentContainerStyle={companies.length === 0 ? styles.flatEmpty : { paddingVertical: 10 }}
+            ListEmptyComponent={
+              <View style={styles.center}>
+                <Text style={styles.emptyTitle}>No companies found</Text>
+                <Text style={styles.emptyText}>Try a different keyword.</Text>
+              </View>
+            }
+          />
+        )}
 
-                        {/* CART ICON */}
-                        <TouchableOpacity onPress={() => router.push("/components/cart")}>
-                            <Ionicons name="cart-outline" size={26} color="#111" />
-                        </TouchableOpacity>
-                    </View>
-                </View>
+        {/* Modal */}
+        <Modal visible={!!selectedCompany} transparent animationType="slide" onRequestClose={() => setSelectedCompany(null)}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalBox}>
+              <Text style={styles.modalTitle}>{selectedCompany?.name}</Text>
+              <Text style={styles.modalText}>{selectedCompany?.type}</Text>
+              <Text style={styles.modalText}>City: {selectedCompany?.city}</Text>
+              <Text style={styles.modalText}>Active products: {selectedCompany?.totalActive}</Text>
 
-                {/* Search + Cart is moved above, search remains full width */}
-                <TextInput
-                    value={query}
-                    onChangeText={setQuery}
-                    placeholder="Search..."
-                    style={styles.search}
-                />
-
-                {loading ? (
-                    <ActivityIndicator size="large" />
-                ) : (
-                    <FlatList
-                        data={filtered}
-                        keyExtractor={(i) => String(i.id)}
-                        renderItem={renderCompany}
-                        refreshControl={
-                            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-                        }
-                        contentContainerStyle={{ paddingVertical: 10 }}
-                    />
-                )}
-
-                {/* MODAL */}
-                <Modal
-                    visible={!!selectedCompany}
-                    transparent
-                    animationType="slide"
-                    onRequestClose={() => setSelectedCompany(null)}
+              <View style={{ flexDirection: "row", marginTop: 18 }}>
+                <TouchableOpacity
+                  style={[styles.connectBtn, { flex: 1 }]}
+                  onPress={() => {
+                    handleConnect(selectedCompany);
+                    setSelectedCompany(null);
+                  }}
                 >
-                    <View style={styles.modalContainer}>
-                        <View style={styles.modalBox}>
-                            <Text style={styles.modalTitle}>
-                                {selectedCompany?.name ?? selectedCompany?.company_name}
-                            </Text>
-                            <Text style={styles.modalText}>
-                                {selectedCompany?.description ?? selectedCompany?.short}
-                            </Text>
+                  <Text style={styles.connectText}>{selectedCompany?.is_linked ? (selectedCompany?.link_status || "Linked") : "Connect"}</Text>
+                </TouchableOpacity>
 
-                            <TouchableOpacity
-                                style={[styles.connectBtn, { marginTop: 20 }]}
-                                onPress={() => {
-                                    handleConnect(selectedCompany);
-                                    setSelectedCompany(null);
-                                }}
-                            >
-                                <Text style={styles.connectText}>Connect</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={{ marginTop: 12, alignSelf: "center" }}
-                                onPress={() => setSelectedCompany(null)}
-                            >
-                                <Text style={{ color: "#6b7280" }}>Close</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </Modal>
+                <TouchableOpacity style={{ flex: 1, marginLeft: 8, justifyContent: "center", alignItems: "center" }} onPress={() => setSelectedCompany(null)}>
+                  <Text style={{ color: "#6b7280" }}>Close</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-        </SafeAreaView>
-    );
+          </View>
+        </Modal>
+      </View>
+    </SafeAreaView>
+  );
 }
 
 
@@ -509,6 +708,32 @@ const styles = StyleSheet.create({
         height: 18,
         borderRadius: 9,
         justifyContent: "center",
+        alignItems: "center",
+    },
+    acceptBtn: {
+        flex: 1,
+        backgroundColor: "#10b981",
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: 40,
+    },
+    rejectBtn: {
+        flex: 1,
+        backgroundColor: "#ef4444",
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    deleteBtn: {
+        backgroundColor: "#ef4444",
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 8,
         alignItems: "center",
     },
 });
