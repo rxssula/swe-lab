@@ -89,6 +89,13 @@ const consumerNavItems = [
       'View the products available from linked suppliers (only after approval).',
   },
   {
+    title: 'Find Suppliers',
+    url: '/dashboard/suppliers',
+    icon: LinkIcon,
+    description:
+      'Browse and request links to suppliers to access their products.',
+  },
+  {
     title: 'Orders',
     url: '/dashboard/orders',
     icon: ShoppingCart,

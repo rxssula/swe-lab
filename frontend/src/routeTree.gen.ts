@@ -13,6 +13,9 @@ import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
+import { Route as DashboardSuppliersIndexRouteImport } from './routes/dashboard/suppliers/index'
+import { Route as DashboardOrdersIndexRouteImport } from './routes/dashboard/orders/index'
+import { Route as DashboardLinksIndexRouteImport } from './routes/dashboard/links/index'
 import { Route as DashboardCatalogIndexRouteImport } from './routes/dashboard/catalog/index'
 import { Route as AuthSupplierSignupIndexRouteImport } from './routes/auth/supplier/signup/index'
 import { Route as AuthSupplierLoginIndexRouteImport } from './routes/auth/supplier/login/index'
@@ -38,6 +41,21 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
   id: '/auth/',
   path: '/auth/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardSuppliersIndexRoute = DashboardSuppliersIndexRouteImport.update({
+  id: '/suppliers/',
+  path: '/suppliers/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardOrdersIndexRoute = DashboardOrdersIndexRouteImport.update({
+  id: '/orders/',
+  path: '/orders/',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardLinksIndexRoute = DashboardLinksIndexRouteImport.update({
+  id: '/links/',
+  path: '/links/',
+  getParentRoute: () => DashboardRouteRoute,
 } as any)
 const DashboardCatalogIndexRoute = DashboardCatalogIndexRouteImport.update({
   id: '/catalog/',
@@ -71,6 +89,9 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/catalog': typeof DashboardCatalogIndexRoute
+  '/dashboard/links': typeof DashboardLinksIndexRoute
+  '/dashboard/orders': typeof DashboardOrdersIndexRoute
+  '/dashboard/suppliers': typeof DashboardSuppliersIndexRoute
   '/auth/consumer/login': typeof AuthConsumerLoginIndexRoute
   '/auth/consumer/signup': typeof AuthConsumerSignupIndexRoute
   '/auth/supplier/login': typeof AuthSupplierLoginIndexRoute
@@ -81,6 +102,9 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/catalog': typeof DashboardCatalogIndexRoute
+  '/dashboard/links': typeof DashboardLinksIndexRoute
+  '/dashboard/orders': typeof DashboardOrdersIndexRoute
+  '/dashboard/suppliers': typeof DashboardSuppliersIndexRoute
   '/auth/consumer/login': typeof AuthConsumerLoginIndexRoute
   '/auth/consumer/signup': typeof AuthConsumerSignupIndexRoute
   '/auth/supplier/login': typeof AuthSupplierLoginIndexRoute
@@ -93,6 +117,9 @@ export interface FileRoutesById {
   '/auth/': typeof AuthIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/catalog/': typeof DashboardCatalogIndexRoute
+  '/dashboard/links/': typeof DashboardLinksIndexRoute
+  '/dashboard/orders/': typeof DashboardOrdersIndexRoute
+  '/dashboard/suppliers/': typeof DashboardSuppliersIndexRoute
   '/auth/consumer/login/': typeof AuthConsumerLoginIndexRoute
   '/auth/consumer/signup/': typeof AuthConsumerSignupIndexRoute
   '/auth/supplier/login/': typeof AuthSupplierLoginIndexRoute
@@ -106,6 +133,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard/'
     | '/dashboard/catalog'
+    | '/dashboard/links'
+    | '/dashboard/orders'
+    | '/dashboard/suppliers'
     | '/auth/consumer/login'
     | '/auth/consumer/signup'
     | '/auth/supplier/login'
@@ -116,6 +146,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/dashboard/catalog'
+    | '/dashboard/links'
+    | '/dashboard/orders'
+    | '/dashboard/suppliers'
     | '/auth/consumer/login'
     | '/auth/consumer/signup'
     | '/auth/supplier/login'
@@ -127,6 +160,9 @@ export interface FileRouteTypes {
     | '/auth/'
     | '/dashboard/'
     | '/dashboard/catalog/'
+    | '/dashboard/links/'
+    | '/dashboard/orders/'
+    | '/dashboard/suppliers/'
     | '/auth/consumer/login/'
     | '/auth/consumer/signup/'
     | '/auth/supplier/login/'
@@ -173,6 +209,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/suppliers/': {
+      id: '/dashboard/suppliers/'
+      path: '/suppliers'
+      fullPath: '/dashboard/suppliers'
+      preLoaderRoute: typeof DashboardSuppliersIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/orders/': {
+      id: '/dashboard/orders/'
+      path: '/orders'
+      fullPath: '/dashboard/orders'
+      preLoaderRoute: typeof DashboardOrdersIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/links/': {
+      id: '/dashboard/links/'
+      path: '/links'
+      fullPath: '/dashboard/links'
+      preLoaderRoute: typeof DashboardLinksIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     '/dashboard/catalog/': {
       id: '/dashboard/catalog/'
       path: '/catalog'
@@ -214,11 +271,17 @@ declare module '@tanstack/react-router' {
 interface DashboardRouteRouteChildren {
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardCatalogIndexRoute: typeof DashboardCatalogIndexRoute
+  DashboardLinksIndexRoute: typeof DashboardLinksIndexRoute
+  DashboardOrdersIndexRoute: typeof DashboardOrdersIndexRoute
+  DashboardSuppliersIndexRoute: typeof DashboardSuppliersIndexRoute
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardCatalogIndexRoute: DashboardCatalogIndexRoute,
+  DashboardLinksIndexRoute: DashboardLinksIndexRoute,
+  DashboardOrdersIndexRoute: DashboardOrdersIndexRoute,
+  DashboardSuppliersIndexRoute: DashboardSuppliersIndexRoute,
 }
 
 const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
