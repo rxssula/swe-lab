@@ -298,7 +298,7 @@ def accept_link_request(
 
     if not has_supplier_permission(
         db, current_user, link.supplier_id,
-        [SupplierRole.OWNER.value, SupplierRole.ADMIN.value]
+        [SupplierRole.OWNER.value, SupplierRole.MANAGER.value]
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -355,7 +355,7 @@ def reject_link_request(
 
     if not has_supplier_permission(
         db, current_user, link.supplier_id,
-        [SupplierRole.OWNER.value, SupplierRole.ADMIN.value]
+        [SupplierRole.OWNER.value, SupplierRole.MANAGER.value]
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -414,7 +414,7 @@ def remove_or_block_link(
 
     if not has_supplier_permission(
         db, current_user, link.supplier_id,
-        [SupplierRole.OWNER.value, SupplierRole.ADMIN.value]
+        [SupplierRole.OWNER.value, SupplierRole.MANAGER.value]
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

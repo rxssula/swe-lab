@@ -13,6 +13,7 @@ from app.models.enums import IncidentStatus, LinkStatus, AdminRole, SupplierRole
 class UserBase(BaseModel):
     email: str
     phone_number: Optional[str] = None
+    name: str = None
 
     model_config = {"from_attributes": True}
 
@@ -78,6 +79,7 @@ class StaffCreateRequest(BaseModel):
     email: EmailStr
     password: str
     role: str
+    name: str
     phone_number: Optional[str] = None
 
 
@@ -103,6 +105,7 @@ class ConsumerSignup(BaseModel):
 
     email: EmailStr
     password: str
+    name: str
     phone_number: Optional[str] = None
 
 
@@ -117,6 +120,7 @@ class SupplierSignup(BaseModel):
 
     email: EmailStr
     password: str
+    name: str
     phone_number: Optional[str] = None
 
     subscription_tier: Optional[str] = "trial"

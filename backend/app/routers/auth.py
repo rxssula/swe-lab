@@ -34,6 +34,7 @@ def signup_consumer(data: ConsumerSignup, db: Session = Depends(get_db)):
             phone_number=data.phone_number,
             created_at=datetime.now(),
             last_login_at=datetime.now(),
+            name=data.name,
         )
         db.add(user)
         db.flush()
@@ -59,7 +60,7 @@ def signup_consumer(data: ConsumerSignup, db: Session = Depends(get_db)):
         db.refresh(user)
 
         token = create_access_token(
-            data={"sub": str(user.id)},
+            data={"sub": str(consumer.id)},
             user_type="consumer",
             role=ConsumerRole.OWNER.value
         )
@@ -69,7 +70,7 @@ def signup_consumer(data: ConsumerSignup, db: Session = Depends(get_db)):
             consumer_id=consumer.id,
             user=UserRead.model_validate(user),
             user_type=token.user_type,
-            role=token.role
+            role=token.role,
         )
 
     except IntegrityError as e:
@@ -100,6 +101,7 @@ def signup_supplier(data: SupplierSignup, db: Session = Depends(get_db)):
             password_hash=get_password_hash(data.password),
             phone_number=data.phone_number,
             created_at=datetime.now(),
+            name=data.name,
             last_login_at=datetime.now(),
         )
         db.add(user)
@@ -137,7 +139,7 @@ def signup_supplier(data: SupplierSignup, db: Session = Depends(get_db)):
         db.refresh(user)
 
         token = create_access_token(
-            data={"sub": str(user.id)},
+            data={"sub": str(supplier.id)},
             user_type="supplier",
             role=SupplierRole.OWNER.value
         )
@@ -286,13 +288,13 @@ async def read_users_me(
         if not supplier:
             continue
 
-        # Find manager (owner or admin role) for this supplier
+        # Find manager (owner or manager role) for this supplier
         manager_staff = db.query(SupplierStaff).join(User).filter(
             SupplierStaff.supplier_id == ss.supplier_id,
-            SupplierStaff.role.in_(['OWNER', 'ADMIN']),
+            SupplierStaff.role.in_(['OWNER', 'MANAGER']),
             SupplierStaff.user_id != user.id  # Exclude current user
         ).order_by(
-            # Prioritize owner over admin
+            # Prioritize owner over manager
             case((SupplierStaff.role == 'OWNER', 0), else_=1)
         ).first()
 
@@ -317,6 +319,7 @@ async def read_users_me(
         id=user.id,
         email=user.email,
         phone_number=user.phone_number,
+        name=user.name,
         created_at=user.created_at,
         last_login_at=user.last_login_at,
         consumer_associations=consumer_associations,

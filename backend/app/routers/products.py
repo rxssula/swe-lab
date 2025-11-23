@@ -198,7 +198,7 @@ def create_product(
 
     if not has_supplier_permission(
         db, current_user, supplier.id,
-        [SupplierRole.OWNER.value, SupplierRole.ADMIN.value]
+        [SupplierRole.OWNER.value, SupplierRole.MANAGER.value]
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -323,7 +323,7 @@ def update_product(
 
     if not has_supplier_permission(
         db, current_user, product.supplier_id,
-        [SupplierRole.OWNER.value, SupplierRole.ADMIN.value]
+        [SupplierRole.OWNER.value, SupplierRole.MANAGER.value]
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -360,7 +360,7 @@ def delete_product(
 
     if not has_supplier_permission(
         db, current_user, product.supplier_id,
-        [SupplierRole.OWNER.value, SupplierRole.ADMIN.value]
+        [SupplierRole.OWNER.value, SupplierRole.MANAGER.value]
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -394,7 +394,7 @@ def add_product_image(
 
     if not has_supplier_permission(
         db, current_user, product.supplier_id,
-        [SupplierRole.OWNER.value, SupplierRole.ADMIN.value]
+        [SupplierRole.OWNER.value, SupplierRole.MANAGER.value]
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -439,7 +439,7 @@ def delete_product_image(
 
     if not has_supplier_permission(
         db, current_user, product.supplier_id,
-        [SupplierRole.OWNER.value, SupplierRole.ADMIN.value]
+        [SupplierRole.OWNER.value, SupplierRole.MANAGER.value]
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

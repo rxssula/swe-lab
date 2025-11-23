@@ -59,8 +59,8 @@ def create_supplier_staff(
 ):
     """
     Create a new staff member for a supplier directly.
-    - OWNERs can create all roles (OWNER, ADMIN, SALES)
-    - ADMINs can only create SALES roles
+    - OWNERs can create all roles (OWNER, MANAGER, SALES)
+    - MANAGERs can only create SALES roles
     """
     # Get current user's staff record to check permissions
     current_staff = db.query(SupplierStaff).filter(
@@ -75,15 +75,15 @@ def create_supplier_staff(
     if current_staff.role == SupplierRole.OWNER.value:
         # Owners can create any role
         pass
-    elif current_staff.role == SupplierRole.ADMIN.value:
-        # Admins can only create SALES
+    elif current_staff.role == SupplierRole.MANAGER.value:
+        # Managers can only create SALES
         if staff_data.role != SupplierRole.SALES.value:
             raise HTTPException(
                 status_code=403,
-                detail="Admins can only create SALES staff members"
+                detail="Managers can only create SALES staff members"
             )
     else:
-        raise HTTPException(status_code=403, detail="Only owners and admins can create staff")
+        raise HTTPException(status_code=403, detail="Only owners and managers can create staff")
 
     # Validate the role value
     try:
@@ -105,6 +105,7 @@ def create_supplier_staff(
             email=str(staff_data.email),
             password_hash=get_password_hash(staff_data.password),
             phone_number=staff_data.phone_number,
+            name=staff_data.name,
             created_at=datetime.now(),
             last_login_at=datetime.now()
         )

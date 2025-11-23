@@ -28,6 +28,7 @@ def create_consumer_staff(
     - MANAGERs can only create STAFF roles
     """
     # Get current user's staff record to check permissions
+    print(current_user.id)
     current_staff = db.query(ConsumerStaff).filter(
         ConsumerStaff.consumer_id == consumer_id,
         ConsumerStaff.user_id == current_user.id
@@ -70,6 +71,7 @@ def create_consumer_staff(
             email=str(staff_data.email),
             password_hash=get_password_hash(staff_data.password),
             phone_number=staff_data.phone_number,
+            name=staff_data.name,
             created_at=datetime.now(),
             last_login_at=datetime.now()
         )

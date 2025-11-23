@@ -8,13 +8,13 @@ class AdminRole(Enum):
 
 class SupplierRole(Enum):
     OWNER = "OWNER"
-    ADMIN = "ADMIN"
+    MANAGER = "MANAGER"
     SALES = "SALES"
 
 class ConsumerRole(Enum):
-    OWNER = "owner"
-    MANAGER = "manager"
-    STAFF = "staff"
+    OWNER = "OWNER"
+    MANAGER = "MANAGER"
+    STAFF = "STAFF"
 
 class IncidentStatus(Enum):
     OPEN = "open"
