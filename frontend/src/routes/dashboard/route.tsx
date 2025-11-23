@@ -1,5 +1,7 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import {
   SidebarProvider,
   SidebarInset,
@@ -8,6 +10,35 @@ import {
 import { AppSidebar } from '@/components/app-sidebar'
 import { Separator } from '@/components/ui/separator'
 import { getCurrentUser } from '@/lib/api/auth'
+
+/**
+ * Decodes and validates a JWT token without making an API call
+ * Returns true if token is valid, false otherwise
+ */
+function isValidToken(token: string): boolean {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) {
+      return false
+    }
+
+    // Decode the payload (second part)
+    const payload = JSON.parse(atob(parts[1]))
+
+    // Check expiration
+    if (payload.exp) {
+      const exp = payload.exp * 1000 // Convert to milliseconds
+      if (Date.now() >= exp) {
+        return false // Token expired
+      }
+    }
+
+    return true
+  } catch (error) {
+    // Invalid token format
+    return false
+  }
+}
 
 export const Route = createFileRoute('/dashboard')({
   component: DashboardLayout,
@@ -22,15 +53,46 @@ export const Route = createFileRoute('/dashboard')({
       })
     }
 
-    // Verify token is valid by calling /auth/me
-    try {
-      await getCurrentUser()
-    } catch (error) {
+    // Validate token locally without API call (fast!)
+    if (!isValidToken(token)) {
+      // Clear invalid auth data
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('user_type')
+      localStorage.removeItem('role')
+
+      throw redirect({
+        to: '/auth',
+        search: {
+          redirect: location.href,
+        },
+      })
+    }
+  },
+})
+
+function DashboardLayout() {
+  const userType = localStorage.getItem('user_type') as 'supplier' | 'consumer'
+  const navigate = useNavigate()
+
+  const {
+    data: user,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: getCurrentUser,
+    retry: false,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+  })
+
+  // Handle auth errors (e.g., token revoked on server)
+  useEffect(() => {
+    if (error) {
+      const statusCode = (error as any)?.status
       const errorMessage =
         error instanceof Error ? error.message : String(error)
-      const statusCode = (error as any)?.status
 
-      // Handle 401 or any authentication errors
       if (
         statusCode === 401 ||
         errorMessage.includes('401') ||
@@ -42,28 +104,10 @@ export const Route = createFileRoute('/dashboard')({
         localStorage.removeItem('user_type')
         localStorage.removeItem('role')
 
-        throw redirect({
-          to: '/auth',
-          search: {
-            redirect: location.href,
-          },
-        })
+        navigate({ to: '/auth' })
       }
-
-      // Re-throw other errors
-      throw error
     }
-  },
-})
-
-function DashboardLayout() {
-  const userType = localStorage.getItem('user_type') as 'supplier' | 'consumer'
-
-  const { data: user, isLoading } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: getCurrentUser,
-    retry: false,
-  })
+  }, [error, navigate])
 
   if (isLoading || !user) {
     return (
