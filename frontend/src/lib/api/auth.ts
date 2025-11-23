@@ -12,7 +12,7 @@ export interface ConsumerSignupRequest {
 }
 
 export interface SupplierSignupRequest {
-  company_name: string
+  business_name: string
   business_type?: string
   address?: string
   city?: string
@@ -46,6 +46,14 @@ export interface LoginRequest {
 
 export interface ApiError {
   detail: string
+}
+
+export interface CurrentUser {
+  id: string
+  email: string
+  phone_number?: string
+  created_at: string
+  last_login_at?: string
 }
 
 export async function login(data: LoginRequest): Promise<SignupResponse> {
@@ -106,6 +114,35 @@ export async function signupSupplier(
       detail: 'An error occurred during signup',
     }))
     throw new Error(error.detail || `Signup failed: ${response.statusText}`)
+  }
+
+  return response.json()
+}
+
+export async function getCurrentUser(): Promise<CurrentUser> {
+  const token = localStorage.getItem('access_token')
+  if (!token) {
+    throw new Error('No access token found')
+  }
+
+  const response = await fetch(getApiUrl('auth/me'), {
+    method: 'GET',
+    headers: {
+      ...defaultHeaders,
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (!response.ok) {
+    const error: ApiError = await response.json().catch(() => ({
+      detail: 'Failed to fetch user information',
+    }))
+    const errorMessage =
+      error.detail || `Failed to fetch user: ${response.statusText}`
+    // Include status code in error message for better error handling
+    const errorWithStatus = new Error(`${response.status}: ${errorMessage}`)
+    ;(errorWithStatus as any).status = response.status
+    throw errorWithStatus
   }
 
   return response.json()

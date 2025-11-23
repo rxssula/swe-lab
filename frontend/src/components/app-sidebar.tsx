@@ -31,9 +31,7 @@ type UserType = 'supplier' | 'consumer'
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   userType: UserType
   user: {
-    name: string
     email: string
-    avatar?: string
   }
 }
 
@@ -78,12 +76,6 @@ const supplierNavItems = [
     icon: Settings,
     description:
       'Manage supplier account settings, user roles, and permissions (Owner only).',
-  },
-  {
-    title: 'Logout',
-    url: '/logout',
-    icon: LogOut,
-    description: 'Log out of the supplier account.',
   },
 ]
 
