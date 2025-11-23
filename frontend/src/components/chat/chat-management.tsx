@@ -9,8 +9,8 @@ import {
   Paperclip,
   Send,
 } from 'lucide-react'
-import type {ChatMessage, ChatThread, UserPresence} from '@/lib/api/chat';
-import type {Link} from '@/lib/api/links';
+import type { ChatMessage, ChatThread, UserPresence } from '@/lib/api/chat'
+import type { Link } from '@/lib/api/links'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -22,24 +22,28 @@ import {
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
-  
-  
-  
   getChatThreads,
   getMessages,
   getUserPresence,
   getWebSocketUrl,
   markMessagesAsRead,
   sendMessage,
-  sendMessageWithFiles
+  sendMessageWithFiles,
 } from '@/lib/api/chat'
 import { getCurrentUser } from '@/lib/api/auth'
-import {  getLinkRequests, getMyLinks } from '@/lib/api/links'
+import { getLinkRequests, getMyLinks } from '@/lib/api/links'
 
 // Simple date formatting function
 function formatDistanceToNow(date: Date | string): string {
   const now = new Date()
-  const then = typeof date === 'string' ? new Date(date) : date
+  let then: Date
+  if (typeof date === 'string') {
+    const hasTimezone = date.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(date)
+    const dateStr = hasTimezone ? date : date + 'Z'
+    then = new Date(dateStr)
+  } else {
+    then = date
+  }
   const diffInSeconds = Math.floor((now.getTime() - then.getTime()) / 1000)
 
   if (diffInSeconds < 60) {
@@ -196,21 +200,24 @@ export function ChatManagement({ userType }: ChatManagementProps) {
         )
 
         // Update thread list with new last message
-        queryClient.setQueryData(['chatThreads'], (old: Array<ChatThread> = []) => {
-          return old.map((thread) => {
-            if (thread.link_id === selectedThread?.link_id) {
-              return {
-                ...thread,
-                last_message_at: data.data.sent_at,
-                unread_count:
-                  data.data.sender_id !== currentUser?.id
-                    ? thread.unread_count + 1
-                    : thread.unread_count,
+        queryClient.setQueryData(
+          ['chatThreads'],
+          (old: Array<ChatThread> = []) => {
+            return old.map((thread) => {
+              if (thread.link_id === selectedThread?.link_id) {
+                return {
+                  ...thread,
+                  last_message_at: data.data.sent_at,
+                  unread_count:
+                    data.data.sender_id !== currentUser?.id
+                      ? thread.unread_count + 1
+                      : thread.unread_count,
+                }
               }
-            }
-            return thread
-          })
-        })
+              return thread
+            })
+          },
+        )
 
         // Scroll to bottom
         setTimeout(() => {
@@ -479,24 +486,24 @@ export function ChatManagement({ userType }: ChatManagementProps) {
                             {message.message_text}
                           </p>
                           {message.attachments.length > 0 && (
-                              <div className="mt-2 space-y-1">
-                                {message.attachments.map((attachment, idx) => (
-                                  <a
-                                    key={idx}
-                                    href={attachment.file_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={`block text-xs underline ${
-                                      isOwnMessage
-                                        ? 'text-primary-foreground/80'
-                                        : 'text-muted-foreground'
-                                    }`}
-                                  >
-                                    📎 {attachment.file_name}
-                                  </a>
-                                ))}
-                              </div>
-                            )}
+                            <div className="mt-2 space-y-1">
+                              {message.attachments.map((attachment, idx) => (
+                                <a
+                                  key={idx}
+                                  href={attachment.file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={`block text-xs underline ${
+                                    isOwnMessage
+                                      ? 'text-primary-foreground/80'
+                                      : 'text-muted-foreground'
+                                  }`}
+                                >
+                                  📎 {attachment.file_name}
+                                </a>
+                              ))}
+                            </div>
+                          )}
                           <div className="flex items-center gap-1 mt-1">
                             <span
                               className={`text-xs ${
