@@ -10,7 +10,6 @@ import {
   CheckCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Card,
@@ -20,7 +19,6 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import {
   getChatThreads,
   getMessages,
@@ -63,7 +61,7 @@ interface ChatManagementProps {
 export function ChatManagement({ userType }: ChatManagementProps) {
   const [selectedThread, setSelectedThread] = useState<ChatThread | null>(null)
   const [messageText, setMessageText] = useState('')
-  const [isTyping, setIsTyping] = useState(false)
+  const [_, setIsTyping] = useState(false)
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set())
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
@@ -366,7 +364,7 @@ export function ChatManagement({ userType }: ChatManagementProps) {
   return (
     <div className="flex h-[calc(100vh-8rem)] gap-4">
       {/* Thread List */}
-      <Card className="w-80 flex-shrink-0">
+      <Card className="w-80 shrink-0">
         <CardHeader>
           <CardTitle>Chats</CardTitle>
           <CardDescription>
@@ -473,7 +471,7 @@ export function ChatManagement({ userType }: ChatManagementProps) {
                               : 'bg-muted'
                           }`}
                         >
-                          <p className="text-sm whitespace-pre-wrap break-words">
+                          <p className="text-sm whitespace-pre-wrap wrap-break-words">
                             {message.message_text}
                           </p>
                           {message.attachments &&
