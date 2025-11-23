@@ -2,13 +2,13 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import * as SecureStore from "expo-secure-store";
 import { useRouter } from "expo-router";
 
-type User = { id: number; email: string } | null;
+type User = { id: number; username: string } | null;
 
 type AuthContextType = {
   user: User;
   token: string | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (username: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const resp = await fetch("https://swe-lab-1.onrender.com/auth/me/", {
               headers: { Authorization: `Bearer ${t}` },
             });
-            if (resp.ok) {
+            if (resp.ok) { 
               const profile = await resp.json();
               setUser(profile);
             } else {
@@ -60,10 +60,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (username: string, password: string) => {
     setIsLoading(true);   
     try {
+      console.log("ios loading", username, password);
         const form = new URLSearchParams();
         form.append("username", username);
         form.append("password", password);
-        const resp = await fetch("https://swe-lab-1.onrender.com/auth/token/", {
+        console.log("ios loading2", username, password);
+        const resp = await fetch("https://swe-lab-1.onrender.com/auth/token", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: form.toString(),
@@ -77,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setToken(t);
 
         // fetch user profile
-        const profileResp = await fetch("https://swe-lab-1.onrender.com/auth/me/", {
+        const profileResp = await fetch("https://swe-lab-1.onrender.com/auth/me", {
             headers: { Authorization: `Bearer ${t}` },
         });
         if (profileResp.ok) {
@@ -85,7 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log("profile:", profile);
             setUser(profile);
             let role = profile.role;
-            if (role != "consumer") {
+            if (role == "consumer") {
               router.replace("/consumer/(tabs)/dashboard");
             } else {
               router.replace("/supplier/(tabs)/dashboard");
@@ -93,6 +95,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 
             
+        } else {
+          console.log("profile not ok")
         }
       } finally {
           setIsLoading(false);
