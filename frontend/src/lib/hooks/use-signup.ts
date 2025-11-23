@@ -18,7 +18,7 @@ export function useConsumerSignup() {
       localStorage.setItem('user_type', data.user_type)
       localStorage.setItem('role', data.role)
 
-      navigate({ to: '/consumer/dashboard' }).catch(() => {
+      navigate({ to: '/dashboard/catalog' }).catch(() => {
         navigate({ to: '/' })
       })
     },
@@ -35,7 +35,7 @@ export function useSupplierSignup() {
       localStorage.setItem('user_type', data.user_type)
       localStorage.setItem('role', data.role)
 
-      navigate({ to: '/supplier/dashboard' }).catch(() => {
+      navigate({ to: '/dashboard/catalog' }).catch(() => {
         navigate({ to: '/' })
       })
     },
