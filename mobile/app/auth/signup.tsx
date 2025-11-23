@@ -128,7 +128,6 @@ export default function Signup() {
 
                 <View className="space-y-4">
 
-                    {/* NEW NAME FIELD */}
                     <View>
                         <Text className="text-sm font-medium text-gray-700 mb-2">
                             Name and Surname *
