@@ -1,12 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext'; // adjust path if needed
 
 export default function Profile() {
-  const { user, isLoading, signOut, token } = useAuth();
+  const { user, isLoading, signOut } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    // if provider finished loading and no user, redirect to login
+    if (!isLoading && !user) {
+      signOut();
+    }
+  }, [isLoading, user, router]);
 
   if (isLoading || !user) {
     return (
@@ -15,40 +22,12 @@ export default function Profile() {
       </View>
     );
   }
-  
+
+  // map backend fields to UI-friendly names (adjust keys to your backend)
+  const displayName = user.name ?? user.full_name ?? user.business_name ?? user.company_name ?? user.email;
   const email = user.email ?? '—';
-  const phone = user.phone ?? '—';
-  const avatar = user.avatar_url ?? user.avatar ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(email)}`;
-  const [businessName, setBusinessName] = useState('');
-  const [businessType, setBusinessType] = useState('');
-  const [manager, setManager] = useState('');
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      if (!token) {
-        signOut();
-        return;
-      }
-      try {
-        const resp = await fetch('https://swe-lab-1.onrender.com/auth/me', {
-          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-        });
-        if (!resp.ok) throw new Error('Failed to fetch user info');
-        const data = await resp.json();
-
-        const assoc = data.supplier_associations?.[0] || data.consumer_associations?.[0];
-        setBusinessName(assoc?.supplier?.business_name || assoc?.consumer?.business_name || '');
-        setBusinessType(assoc?.supplier?.business_type || assoc?.consumer?.business_type || '');
-        setManager(assoc?.manager || '');
-      } catch (err) {
-        console.error(err);
-        Alert.alert('Error', 'Failed to load user info');
-      }
-    };
-
-    fetchUser();
-  }, [token]);
-
+  const phone = user.phone ?? user.phone_number ?? '—';
+  const avatar = user.avatar_url ?? user.avatar ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}`;
 
   return (
     <View style={styles.container}>
@@ -61,6 +40,15 @@ export default function Profile() {
         </View>
 
         <View style={styles.infoContainer}>
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Name</Text>
+            <View style={styles.infoRight}>
+              <Text style={styles.infoText}>{displayName}</Text>
+              <TouchableOpacity style={styles.editButton}>
+                <Ionicons name="pencil" size={16} color="#007bff" />
+              </TouchableOpacity>
+            </View>
+          </View>
 
           <View style={styles.infoRow}>
             <Text style={styles.label}>Email</Text>
@@ -81,47 +69,15 @@ export default function Profile() {
               </TouchableOpacity>
             </View>
           </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Business Name</Text>
-            <View style={styles.infoRight}>
-              <Text style={styles.infoText}>{businessName}</Text>
-              <TouchableOpacity style={styles.editButton}>
-                <Ionicons name="pencil" size={16} color="#007bff" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Business type</Text>
-            <View style={styles.infoRight}>
-              <Text style={styles.infoText}>{businessType}</Text>
-              <TouchableOpacity style={styles.editButton}>
-                <Ionicons name="pencil" size={16} color="#007bff" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Manager:</Text>
-            <View style={styles.infoRight}>
-              <Text style={styles.infoText}>{manager}</Text>
-              <TouchableOpacity style={styles.editButton}>
-                <Ionicons name="pencil" size={16} color="#007bff" />
-              </TouchableOpacity>
-            </View>
-          </View>
         </View>
 
-        {(user?.role === "MANAGER" || user?.role === "OWNER") && (
-          <TouchableOpacity
-            style={styles.manageButton}
-            onPress={() => router.push('manage-business')}
-          >
-            <Ionicons name="business-outline" size={22} color="#fff" />
-            <Text style={styles.manageButtonText}>Manage Business</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={styles.manageButton}
+          onPress={() => router.push('/supplier/manage-business')}
+        >
+          <Ionicons name="business-outline" size={22} color="#fff" />
+          <Text style={styles.manageButtonText}>Manage Business</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <View style={styles.bottomButtons}>
