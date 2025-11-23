@@ -5,454 +5,230 @@ import {
   TextInput,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
   ActivityIndicator,
   Alert,
   ScrollView,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Picker } from "@react-native-picker/picker";
-import { useAuth } from "../context/AuthContext"; // adjust path if needed
+import { useAuth } from "../context/AuthContext";
 
-type Product = {
-  id: string;
+type CategoryItem = { id: string; name: string };
+type Category = { 
+  description: string;
   name: string;
+};
+type Product = {
+  name: string;
+  description: string;
+  category_id: string;
   unit: string;
-  price: string;
-  sku: string;
-  availability: string;
-  brand: string;
-  category?: string;
-  _isNew?: boolean;
-  _isDirty?: boolean;
+  price_per_unit: number;
+  stock_level: number;
+  minimum_order_quantity: number;
+  is_active: boolean;
 };
 
 export default function ProductInfo() {
-  // try to get token from context; if useAuth not present, fallback to null
-  const { token: tokenFromContext } = (() => {
-    try {
-      return useAuth();
-    } catch {
-      return { token: null };
-    }
-  })() as any;
+  const { token, signOut, user } = useAuth();
+  if (!token) {
+    console.log("user", user);
+    signOut();
+  }
 
-  const TOKEN_KEY = "token";
-  const getToken = async () => {
-    if (tokenFromContext) return tokenFromContext;
-    return await AsyncStorage.getItem(TOKEN_KEY);
-  };
+  const CATEGORY_URL = "https://swe-lab-1.onrender.com/categories/";
+  const PRODUCT_URL = "https://swe-lab-1.onrender.com/products/";
 
-  // endpoints — replace with your real API routes
-  const CATEGORIES_URL = "https://swe-lab-1.onrender.com/supplier/categories/"; // GET, POST
-  const PRODUCTS_URL = "https://swe-lab-1.onrender.com/supplier/products/"; // GET, POST, PATCH
+  const [category, setCategory] = useState<Category>({
+    name: "",
+    description: ""
+  });
+  const [product, setProduct] = useState<Product>({
+    name: "",
+    description: "",
+    unit: "",
+    price_per_unit: 0,
+    stock_level: 0,
+    minimum_order_quantity: 1,
+    category_id: "",
+    is_active: true,
+  });
 
-  const [categories, setCategories] = useState<string[]>([""]);
-  const [products, setProducts] = useState<Product[]>([
-    { id: "local-1", name: "", unit: "", price: "", sku: "", availability: "", brand: "", category: "", _isNew: true },
-  ]);
 
   const [loading, setLoading] = useState(true);
-  const [savingCategories, setSavingCategories] = useState(false);
-  const [savingProducts, setSavingProducts] = useState(false);
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [categoriesList, setCategoriesList] = useState<CategoryItem[]>([]);
 
   useEffect(() => {
     let mounted = true;
-    const load = async () => {
+    const loadData = async () => {
       setLoading(true);
       try {
-        const token = await getToken();
+        console.log("token:", token)
         const headers: any = { Accept: "application/json" };
         if (token) headers.Authorization = `Bearer ${token}`;
 
-        const [catsResp, prodsResp] = await Promise.all([
-          fetch(CATEGORIES_URL, { headers }),
-          fetch(PRODUCTS_URL, { headers }),
-        ]);
+        const resp = await fetch(CATEGORY_URL, { headers });
+        const text = await resp.text();
+        let data: any = null;
+        try { data = text ? JSON.parse(text) : null; } catch {}
 
-        const catsText = await catsResp.text();
-        const prodsText = await prodsResp.text();
-
-        let catsData: any = null;
-        let prodsData: any = null;
-        try { catsData = catsText ? JSON.parse(catsText) : null; } catch {}
-        try { prodsData = prodsText ? JSON.parse(prodsText) : null; } catch {}
-
-        if (!mounted) return;
-
-        if (catsResp.ok && Array.isArray(catsData)) {
-          const mappedCats = catsData.map((c: any) => (typeof c === "string" ? c : c.name ?? c.title ?? String(c)));
-          setCategories(mappedCats.length ? mappedCats : [""]);
-        } else {
-          console.warn("Categories fetch failed", catsResp.status, catsData ?? catsText);
-          setCategories([""]);
-        }
-
-        if (prodsResp.ok && Array.isArray(prodsData)) {
-          const mappedProds: Product[] = prodsData.map((p: any) => ({
-            id: String(p.id ?? p._id ?? Date.now().toString()),
-            name: p.name ?? "",
-            unit: p.unit ?? "",
-            price: String(p.price ?? ""),
-            sku: p.sku ?? "",
-            availability: p.availability ?? "",
-            brand: p.brand ?? "",
-            category: p.category ?? p.category_name ?? "",
-            _isNew: false,
-            _isDirty: false,
-          }));
-          setProducts(mappedProds.length ? mappedProds : [{ id: Date.now().toString(), name: "", unit: "", price: "", sku: "", availability: "", brand: "", category: "", _isNew: true }]);
-        } else {
-          console.warn("Products fetch failed", prodsResp.status, prodsData ?? prodsText);
-          setProducts([{ id: Date.now().toString(), name: "", unit: "", price: "", sku: "", availability: "", brand: "", category: "", _isNew: true }]);
+        if (mounted && Array.isArray(data)) {
+          const mappedCats = data.map((c: any) => ({ id: c.id, name: c.name ?? "" }));
+          setCategoriesList(mappedCats);
+          if (mappedCats.length > 0) {
+            setProduct(prev => ({ ...prev, category_id: mappedCats[0].id }));
+          }
         }
       } catch (err) {
-        console.error("Load error", err);
-        Alert.alert("Error", "Failed to load products/categories. Check connection.");
+        console.warn("Failed to fetch categories", err);
       } finally {
         if (mounted) setLoading(false);
       }
     };
-    load();
+    loadData();
     return () => { mounted = false; };
-  }, []);
+  }, [token]);
 
-  const addCategory = () => setCategories([...categories, ""]);
-  const updateCategory = (index: number, value: string) => {
-    const copy = [...categories];
-    copy[index] = value;
-    setCategories(copy);
-  };
+  const handleSaveCategory = async () => {
+    if (!token || !category.name.trim()) return Alert.alert("Error", "Enter a category name.");
 
-  const addProduct = () => setProducts([
-    ...products,
-    { id: Date.now().toString(), name: "", unit: "", price: "", sku: "", availability: "", brand: "", category: categories[0] ?? "", _isNew: true }
-  ]);
-
-  const updateProduct = (id: string, key: keyof Product, value: string) => {
-    setProducts(products.map(p => p.id === id ? { ...p, [key]: value, _isDirty: !p._isNew } : p));
-  };
-
-  // Save categories only
-  const handleSaveCategories = async () => {
-    setSavingCategories(true);
+    setSavingCategory(true);
     try {
-      const token = await getToken();
-      if (!token) {
-        Alert.alert("Auth", "Not authenticated. Please login.");
-        setSavingCategories(false);
-        return;
-      }
-      const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json" };
-
-      // POST each non-empty category (you can optimize by deduping or checking existing server-side)
-      for (const cat of categories.map(c => c.trim()).filter(Boolean)) {
-        try {
-          const resp = await fetch(CATEGORIES_URL, {
-            method: "POST",
-            headers,
-            body: JSON.stringify({ name: cat }),
-          });
-          const text = await resp.text();
-          let data = null;
-          try { data = text ? JSON.parse(text) : null; } catch {}
-          if (!resp.ok && resp.status !== 409) {
-            console.warn("Category create failed", resp.status, data ?? text);
-          }
-        } catch (err) {
-          console.warn("Category create error", err);
-        }
-      }
-
-      Alert.alert("Success", "Categories saved / synced.");
-      // optionally reload categories from server
+      const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+      const resp = await fetch(CATEGORY_URL, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(category),
+      });
+      if (resp.ok) Alert.alert("Success", "Category saved!");
+      else Alert.alert("Error", "Failed to save category.");
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Network error while saving category.");
     } finally {
-      setSavingCategories(false);
+      setSavingCategory(false);
     }
   };
 
-  // Save products only
-  const handleSaveProducts = async () => {
-    setSavingProducts(true);
+  const handleSaveProduct = async () => {
+    if (!token || !product.name.trim()) return Alert.alert("Error", "Enter a product name.");
+
+    setSavingProduct(true);
     try {
-      const token = await getToken();
-      if (!token) {
-        Alert.alert("Auth", "Not authenticated. Please login.");
-        setSavingProducts(false);
-        return;
-      }
-      const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json", Accept: "application/json" };
-
-      for (const p of products) {
-        if (!p.name.trim()) continue; // skip empty product rows
-
-        if (p._isNew) {
-          try {
-            const resp = await fetch(PRODUCTS_URL, {
-              method: "POST",
-              headers,
-              body: JSON.stringify({
-                name: p.name,
-                unit: p.unit,
-                price: p.price === "" ? null : Number(p.price),
-                sku: p.sku,
-                availability: p.availability,
-                brand: p.brand,
-                category: p.category,
-              }),
-            });
-            const text = await resp.text();
-            let data = null;
-            try { data = text ? JSON.parse(text) : null; } catch {}
-            if (resp.ok) {
-              const serverId = String(data?.id ?? data?.pk ?? data?.product_id ?? Date.now().toString());
-              setProducts(prev => prev.map(x => x === p ? { ...x, id: serverId, _isNew: false, _isDirty: false } : x));
-            } else {
-              console.warn("Product create failed", resp.status, data ?? text);
-              Alert.alert("Product save failed", `Failed to create product "${p.name}".`);
-            }
-          } catch (err) {
-            console.error("Product create error", err);
-            Alert.alert("Error", "Network error while creating product.");
-          }
-        } else if (p._isDirty) {
-          try {
-            const url = PRODUCTS_URL.endsWith("/") ? `${PRODUCTS_URL}${p.id}/` : `${PRODUCTS_URL}/${p.id}/`;
-            const resp = await fetch(url, {
-              method: "PATCH",
-              headers,
-              body: JSON.stringify({
-                name: p.name,
-                unit: p.unit,
-                price: p.price === "" ? null : Number(p.price),
-                sku: p.sku,
-                availability: p.availability,
-                brand: p.brand,
-                category: p.category,
-              }),
-            });
-            const text = await resp.text();
-            let data = null;
-            try { data = text ? JSON.parse(text) : null; } catch {}
-            if (resp.ok) {
-              setProducts(prev => prev.map(x => x.id === p.id ? { ...x, _isDirty: false } : x));
-            } else {
-              console.warn("Product update failed", resp.status, data ?? text);
-              Alert.alert("Product update failed", `Failed to update "${p.name}".`);
-            }
-          } catch (err) {
-            console.error("Product update error", err);
-            Alert.alert("Error", "Network error while updating product.");
-          }
-        }
-      }
-
-      Alert.alert("Success", "Products saved / synced.");
-      // optionally reload products from server
+      const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+      const resp = await fetch(PRODUCT_URL, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(product),
+      });
+      if (resp.ok) Alert.alert("Success", "Product saved!");
+      else Alert.alert("Error", "Failed to save product.");
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Network error while saving product.");
     } finally {
-      setSavingProducts(false);
+      setSavingProduct(false);
     }
   };
 
-  const renderProduct = ({ item }: { item: Product }) => (
-    <View style={styles.box}>
-      <TextInput
-        style={styles.input}
-        placeholder="Name"
-        value={item.name}
-        onChangeText={(t) => updateProduct(item.id, "name", t)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Unit (kg, L, pcs)"
-        value={item.unit}
-        onChangeText={(t) => updateProduct(item.id, "unit", t)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Price"
-        value={item.price}
-        keyboardType="numeric"
-        onChangeText={(t) => updateProduct(item.id, "price", t)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="SKU"
-        value={item.sku}
-        onChangeText={(t) => updateProduct(item.id, "sku", t)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Availability"
-        value={item.availability}
-        onChangeText={(t) => updateProduct(item.id, "availability", t)}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Brand"
-        value={item.brand}
-        onChangeText={(t) => updateProduct(item.id, "brand", t)}
-      />
-
-      {/* Category picker */}
-      <View style={styles.pickerWrap}>
-        <Picker
-          selectedValue={item.category ?? (categories.length ? categories[0] : "")}
-          onValueChange={(val) => updateProduct(item.id, "category", val)}
-        >
-          {categories.map((c, i) => (
-            <Picker.Item key={i} label={c || "—"} value={c} />
-          ))}
-        </Picker>
-      </View>
-    </View>
-  );
-
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator />
-        <Text>Loading products & categories...</Text>
-      </View>
-    );
-  }
+  if (loading) return <ActivityIndicator style={{ flex: 1, justifyContent: "center", alignItems: "center" }} />;
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
+      {/* SINGLE CATEGORY */}
       <View style={styles.sectionBox}>
-        <Text style={styles.sectionTitle}>Existing Categories</Text>
-        {categories.filter(Boolean).length > 0 ? (
-          categories.filter(Boolean).map((cat, idx) => (
-            <Text key={`existing-cat-${idx}`} style={{ marginBottom: 6 }}>
-              {cat}
-            </Text>
-          ))
-        ) : (
-          <Text style={{ fontStyle: "italic", color: "#888" }}>No categories yet</Text>
-        )}
-
-        <Text style={[styles.sectionTitle, { marginTop: 12 }]}>Manage Categories</Text>
-        {categories.map((cat, idx) => (
-          <TextInput
-            key={idx}
-            style={styles.input}
-            placeholder="Category"
-            value={cat}
-            onChangeText={(t) => updateCategory(idx, t)}
-          />
-        ))}
-        <TouchableOpacity style={styles.addBtn} onPress={addCategory}>
-          <Text style={styles.addBtnText}>+ Add Category</Text>
-        </TouchableOpacity>
-
+        <Text style={styles.sectionTitle}>Manage Category</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Category Name"
+          value={category.name}
+          onChangeText={(t) => setCategory({ ...category, name: t })}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Category Description"
+          value={category.description}
+          onChangeText={(t) => setCategory({ ...category, description: t })}
+        />
         <TouchableOpacity
-          style={[styles.saveBtn, { backgroundColor: "#2F80ED", marginTop: 12 }]}
-          onPress={handleSaveCategories}
-          disabled={savingCategories}
+          style={[styles.saveBtn, { backgroundColor: "#2F80ED" }]}
+          onPress={handleSaveCategory}
+          disabled={savingCategory}
         >
-          {savingCategories ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save Categories</Text>}
+          {savingCategory ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save Category</Text>}
         </TouchableOpacity>
       </View>
 
+      {/* SINGLE PRODUCT */}
       <View style={styles.sectionBox}>
-        <Text style={styles.sectionTitle}>Existing Products</Text>
-        {products.filter(p => !p._isNew).length > 0 ? (
-          products.filter(p => !p._isNew).map((p) => (
-            <View key={`existing-prod-${p.id}`} style={styles.box}>
-              <Text style={{ fontWeight: "600" }}>{p.name || "(No name)"}</Text>
-              <Text>Unit: {p.unit}</Text>
-              <Text>Price: {p.price}</Text>
-              <Text>SKU: {p.sku}</Text>
-              <Text>Availability: {p.availability}</Text>
-              <Text>Brand: {p.brand}</Text>
-              <Text>Category: {p.category}</Text>
-            </View>
-          ))
-        ) : (
-          <Text style={{ fontStyle: "italic", color: "#888" }}>No products yet</Text>
-        )}
-
-        <Text style={[styles.sectionTitle, { marginTop: 12 }]}>Manage Products</Text>
-        <FlatList
-          data={products}
-          keyExtractor={(p) => p.id}
-          renderItem={renderProduct}
-          scrollEnabled={false}
+        <Text style={styles.sectionTitle}>Manage Product</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Name"
+          value={product.name}
+          onChangeText={(t) => setProduct({ ...product, name: t })}
         />
-        <TouchableOpacity style={styles.addBtn} onPress={addProduct}>
-          <Text style={styles.addBtnText}>+ Add Product</Text>
-        </TouchableOpacity>
+        <TextInput
+          style={styles.input}
+          placeholder="Description"
+          value={product.description}
+          onChangeText={(t) => setProduct({ ...product, description: t })}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Unit"
+          value={product.unit}
+          onChangeText={(t) => setProduct({ ...product, unit: t })}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Price per unit"
+          keyboardType="numeric"
+          value={product.price_per_unit}
+          onChangeText={(t) => setProduct({ ...product, price_per_unit: Number(t) })}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Stock level"
+          value={product.stock_level}
+          onChangeText={(t) => setProduct({ ...product, stock_level: Number(t) })}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Minimum order quantity"
+          value={product.minimum_order_quantity}
+          onChangeText={(t) => setProduct({ ...product, minimum_order_quantity: Number(t) })}
+        />
+
+        <View style={styles.pickerWrap}>
+          <Picker
+            selectedValue={product.category_id || (categoriesList[0] || "")}
+            onValueChange={(val) => setProduct({ ...product, category_id: val })}
+          >
+            {categoriesList.map((c) => (
+              <Picker.Item key={c.id} label={c.name} value={c.id} />
+            ))}
+          </Picker>
+        </View>
 
         <TouchableOpacity
-          style={[styles.saveBtn, { backgroundColor: "#16A34A", marginTop: 12 }]}
-          onPress={handleSaveProducts}
-          disabled={savingProducts}
+          style={[styles.saveBtn, { backgroundColor: "#16A34A" }]}
+          onPress={handleSaveProduct}
+          disabled={savingProduct}
         >
-          {savingProducts ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save Products</Text>}
+          {savingProduct ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save Product</Text>}
         </TouchableOpacity>
       </View>
     </ScrollView>
-
   );
 }
 
 const styles = StyleSheet.create({
-  sectionBox: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 12,
-    color: "#333",
-  },
-  input: {
-    backgroundColor: "#f2f4f7",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  box: {
-    backgroundColor: "#f7f9fc",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-  },
-  addBtn: {
-    backgroundColor: "#e8f0fe",
-    padding: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 5,
-  },
-  addBtnText: {
-    color: "#2F80ED",
-    fontWeight: "600",
-  },
-  saveBtn: {
-    backgroundColor: "#2F80ED",
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  saveBtnText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  pickerWrap: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#e6e6e6",
-    marginTop: 8,
-  },
+  sectionBox: { backgroundColor: "white", borderRadius: 12, padding: 16, marginBottom: 20, shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 4, elevation: 3 },
+  sectionTitle: { fontSize: 18, fontWeight: "700", marginBottom: 12, color: "#333" },
+  input: { backgroundColor: "#f2f4f7", padding: 12, borderRadius: 8, marginBottom: 10 },
+  saveBtn: { paddingVertical: 14, borderRadius: 12, alignItems: "center", marginTop: 10 },
+  saveBtnText: { color: "white", fontSize: 16, fontWeight: "700" },
+  pickerWrap: { backgroundColor: "#fff", borderRadius: 8, borderWidth: 1, borderColor: "#e6e6e6", marginTop: 8 },
 });
