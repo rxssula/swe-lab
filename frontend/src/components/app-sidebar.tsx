@@ -120,12 +120,6 @@ const consumerNavItems = [
     icon: Settings,
     description: 'Update personal information and account preferences.',
   },
-  {
-    title: 'Logout',
-    url: '/logout',
-    icon: LogOut,
-    description: 'Log out of the consumer account.',
-  },
 ]
 
 export function AppSidebar({ userType, user, ...props }: AppSidebarProps) {

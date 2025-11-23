@@ -16,6 +16,7 @@ import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as DashboardSuppliersIndexRouteImport } from './routes/dashboard/suppliers/index'
 import { Route as DashboardOrdersIndexRouteImport } from './routes/dashboard/orders/index'
 import { Route as DashboardLinksIndexRouteImport } from './routes/dashboard/links/index'
+import { Route as DashboardComplaintsIndexRouteImport } from './routes/dashboard/complaints/index'
 import { Route as DashboardChatIndexRouteImport } from './routes/dashboard/chat/index'
 import { Route as DashboardCatalogIndexRouteImport } from './routes/dashboard/catalog/index'
 import { Route as AuthSupplierSignupIndexRouteImport } from './routes/auth/supplier/signup/index'
@@ -58,6 +59,12 @@ const DashboardLinksIndexRoute = DashboardLinksIndexRouteImport.update({
   path: '/links/',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
+const DashboardComplaintsIndexRoute =
+  DashboardComplaintsIndexRouteImport.update({
+    id: '/complaints/',
+    path: '/complaints/',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
 const DashboardChatIndexRoute = DashboardChatIndexRouteImport.update({
   id: '/chat/',
   path: '/chat/',
@@ -96,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/catalog': typeof DashboardCatalogIndexRoute
   '/dashboard/chat': typeof DashboardChatIndexRoute
+  '/dashboard/complaints': typeof DashboardComplaintsIndexRoute
   '/dashboard/links': typeof DashboardLinksIndexRoute
   '/dashboard/orders': typeof DashboardOrdersIndexRoute
   '/dashboard/suppliers': typeof DashboardSuppliersIndexRoute
@@ -110,6 +118,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/catalog': typeof DashboardCatalogIndexRoute
   '/dashboard/chat': typeof DashboardChatIndexRoute
+  '/dashboard/complaints': typeof DashboardComplaintsIndexRoute
   '/dashboard/links': typeof DashboardLinksIndexRoute
   '/dashboard/orders': typeof DashboardOrdersIndexRoute
   '/dashboard/suppliers': typeof DashboardSuppliersIndexRoute
@@ -126,6 +135,7 @@ export interface FileRoutesById {
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/catalog/': typeof DashboardCatalogIndexRoute
   '/dashboard/chat/': typeof DashboardChatIndexRoute
+  '/dashboard/complaints/': typeof DashboardComplaintsIndexRoute
   '/dashboard/links/': typeof DashboardLinksIndexRoute
   '/dashboard/orders/': typeof DashboardOrdersIndexRoute
   '/dashboard/suppliers/': typeof DashboardSuppliersIndexRoute
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/dashboard/catalog'
     | '/dashboard/chat'
+    | '/dashboard/complaints'
     | '/dashboard/links'
     | '/dashboard/orders'
     | '/dashboard/suppliers'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dashboard/catalog'
     | '/dashboard/chat'
+    | '/dashboard/complaints'
     | '/dashboard/links'
     | '/dashboard/orders'
     | '/dashboard/suppliers'
@@ -172,6 +184,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/dashboard/catalog/'
     | '/dashboard/chat/'
+    | '/dashboard/complaints/'
     | '/dashboard/links/'
     | '/dashboard/orders/'
     | '/dashboard/suppliers/'
@@ -242,6 +255,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLinksIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/dashboard/complaints/': {
+      id: '/dashboard/complaints/'
+      path: '/complaints'
+      fullPath: '/dashboard/complaints'
+      preLoaderRoute: typeof DashboardComplaintsIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     '/dashboard/chat/': {
       id: '/dashboard/chat/'
       path: '/chat'
@@ -291,6 +311,7 @@ interface DashboardRouteRouteChildren {
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardCatalogIndexRoute: typeof DashboardCatalogIndexRoute
   DashboardChatIndexRoute: typeof DashboardChatIndexRoute
+  DashboardComplaintsIndexRoute: typeof DashboardComplaintsIndexRoute
   DashboardLinksIndexRoute: typeof DashboardLinksIndexRoute
   DashboardOrdersIndexRoute: typeof DashboardOrdersIndexRoute
   DashboardSuppliersIndexRoute: typeof DashboardSuppliersIndexRoute
@@ -300,6 +321,7 @@ const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardCatalogIndexRoute: DashboardCatalogIndexRoute,
   DashboardChatIndexRoute: DashboardChatIndexRoute,
+  DashboardComplaintsIndexRoute: DashboardComplaintsIndexRoute,
   DashboardLinksIndexRoute: DashboardLinksIndexRoute,
   DashboardOrdersIndexRoute: DashboardOrdersIndexRoute,
   DashboardSuppliersIndexRoute: DashboardSuppliersIndexRoute,
