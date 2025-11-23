@@ -25,7 +25,6 @@ export async function getCurrentUser(token: string): Promise<CurrentUser> {
     const error = (await response.json()) as ApiError
     if (error?.detail) detail = error.detail
   } catch {
-    // ignore parsing failures
   }
   throw new Error(detail)
 }

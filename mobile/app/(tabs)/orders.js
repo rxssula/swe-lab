@@ -1,4 +1,3 @@
-// app/(tabs)/orders.js
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
@@ -19,14 +18,12 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
 
-// helper to format date
 function formatDate(iso) {
     if (!iso) return '';
     const d = new Date(iso);
     return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-// helper to capitalize status from API (pending -> Pending)
 function capitalizeStatus(status) {
     if (!status) return 'Pending';
     return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
@@ -39,7 +36,7 @@ const STATUS_COLOR = {
     Shipped: '#4db6ac',
     Delivered: '#81c784',
     Canceled: '#e57373',
-    Cancelled: '#e57373', // API might return "cancelled"
+    Cancelled: '#e57373', 
     Completed: '#81c784',
     Rejected: '#e57373',
 };
@@ -47,12 +44,10 @@ const STATUS_COLOR = {
 export default function Orders() {
     const router = useRouter();
 
-    // get auth data
     const auth = useAuth();
     const userType = auth?.user?.userType?.toLowerCase() ?? "consumer";
     const isSupplier = userType === "supplier";
 
-    // Try reading token from AuthProvider, fallback to AsyncStorage
     let tokenFromContext = null;
     try {
         tokenFromContext = auth?.token ?? null;
@@ -66,7 +61,6 @@ export default function Orders() {
         return await AsyncStorage.getItem(TOKEN_KEY);
     };
 
-    // Use the correct endpoints
     const ORDERS_URL = isSupplier
         ? 'https://swe-lab-1.onrender.com/orders/supplier/incoming'
         : 'https://swe-lab-1.onrender.com/orders/consumer/history';
@@ -110,12 +104,11 @@ export default function Orders() {
                     throw new Error(data?.detail ?? data?.message ?? `Failed to fetch orders (status ${resp.status})`);
                 }
 
-                // Map API response to UI format
                 let orders = [];
                 if (Array.isArray(data)) {
                     orders = data.map(order => ({
                         id: order.id,
-                        number: order.id, // API doesn't provide order number, use id
+                        number: order.id, 
                         date: order.created_at,
                         total: parseFloat(order.total_amount || 0).toFixed(2),
                         status: capitalizeStatus(order.status),
@@ -163,7 +156,6 @@ export default function Orders() {
         [ORDERS_URL, tokenFromContext]
     );
 
-    // initial load
     useEffect(() => {
         let mounted = true;
         (async () => {
@@ -183,7 +175,6 @@ export default function Orders() {
         return () => { mounted = false; };
     }, [fetchOrdersApi]);
 
-    // pull to refresh
     const onRefresh = useCallback(async () => {
         setIsRefreshing(true);
         try {
@@ -197,7 +188,6 @@ export default function Orders() {
         }
     }, [fetchOrdersApi]);
 
-    // load more
     const loadMore = useCallback(async () => {
         if (isLoadingMore) return;
         setIsLoadingMore(true);
@@ -215,7 +205,6 @@ export default function Orders() {
         }
     }, [fetchOrdersApi, page, isLoadingMore]);
 
-    // Supplier actions: accept, reject, complete
     const handleAcceptOrder = async (orderId) => {
         if (!tokenFromContext || !orderId) return;
         setProcessingOrderId(orderId);
@@ -327,7 +316,6 @@ export default function Orders() {
         );
     };
 
-    // search & filter
     const filtered = orders.filter((o) => {
         if (filterStatus !== 'All' && o.status !== filterStatus) return false;
         if (!query.trim()) return true;
@@ -456,7 +444,6 @@ export default function Orders() {
                 />
             )}
 
-            {/* Order Modal */}
             <Modal visible={modalVisible} animationType="slide" onRequestClose={closeOrder} transparent>
                 <View style={styles.modalBackdrop}>
                     <View style={styles.modalCard}>
@@ -524,7 +511,6 @@ export default function Orders() {
 
                         <View style={styles.modalFooter}>
                             {isSupplier ? (
-                                // Supplier action buttons based on order status
                                 <>
                                     {selectedOrder?.status === 'Pending' && (
                                         <>
@@ -578,7 +564,6 @@ export default function Orders() {
                                     </TouchableOpacity>
                                 </>
                             ) : (
-                                // Consumer buttons
                                 <>
                                     <TouchableOpacity
                                         style={styles.primaryBtn}
@@ -612,7 +597,6 @@ export default function Orders() {
     );
 }
 
-// ------------------ STYLES ------------------
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#fff' },
     header: {

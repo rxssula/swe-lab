@@ -58,7 +58,6 @@ async function handleResponse<T>(res: Response, fallbackMessage: string): Promis
       detail = error.detail
     }
   } catch {
-    // ignore parsing errors
   }
   throw new Error(detail)
 }

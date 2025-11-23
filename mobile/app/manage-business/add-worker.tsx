@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuth } from '../context/AuthContext'; // adjust path if needed
+import { useAuth } from '../context/AuthContext'; 
 
 export default function AddWorker() {
   const [email, setEmail] = useState('');
@@ -19,12 +19,11 @@ export default function AddWorker() {
   const [name, setName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  // try to get token from AuthProvider if available
   const { user, token, signOut } = useAuth();
   if (!token) signOut();
   console.log(user);
  
-  const WORKERS_URL = `https://swe-lab-1.onrender.com/${user.userType}s/${user.id}/staff`; // <- change to your API endpoint
+  const WORKERS_URL = `https://swe-lab-1.onrender.com/${user.userType}s/${user.id}/staff`;
 
   let roleOptionsArray: { label: string; value: string }[] = [];
   if (user?.role === "OWNER") {

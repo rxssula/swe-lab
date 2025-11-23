@@ -136,7 +136,6 @@ export default function ProductInfo() {
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
-      {/* SINGLE CATEGORY */}
       <View style={styles.sectionBox}>
         <Text style={styles.sectionTitle}>Manage Category</Text>
         <TextInput
@@ -160,7 +159,6 @@ export default function ProductInfo() {
         </TouchableOpacity>
       </View>
 
-      {/* SINGLE PRODUCT */}
       <View style={styles.sectionBox}>
         <Text style={styles.sectionTitle}>Manage Product</Text>
         <TextInput

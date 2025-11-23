@@ -54,7 +54,6 @@ export default function ChatsList() {
         setRefreshing(true)
       }
       try {
-        // Fetch chat threads
         const threadsResp = await fetch('https://swe-lab-1.onrender.com/chat/threads', {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -68,7 +67,6 @@ export default function ChatsList() {
 
         const threadsData = await threadsResp.json()
 
-        // Fetch my links to get names (optional - don't fail if this errors)
         let linksData = []
         try {
           const linksResp = await fetch('https://swe-lab-1.onrender.com/links/my-links', {
@@ -107,9 +105,8 @@ export default function ChatsList() {
     useCallback(() => {
       fetchData()
 
-      // Also refresh after a short delay to catch any backend updates
       const timeout = setTimeout(() => {
-        fetchData(false) // Use false to avoid showing loading spinner
+        fetchData(false)
       }, 1000)
 
       return () => clearTimeout(timeout)

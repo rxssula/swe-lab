@@ -1,4 +1,3 @@
-// app/(tabs)/dashboard.js
 import React, { useEffect, useMemo, useState } from "react";
 import {
     View,
@@ -25,10 +24,6 @@ export default function Dashboard() {
     if (userType === "supplier") return <SupplierDashboard token={auth.token} />;
     return <ConsumerDashboard token={auth.token} />;
 }
-
-/* ============================================================
-   =================== SUPPLIER DASHBOARD ======================
-   ============================================================ */
 
 function SupplierDashboard({ token }) {
     const router = useRouter();
@@ -269,8 +264,6 @@ function SupplierDashboard({ token }) {
             <ScrollView contentContainerStyle={{ padding: 12  }}>
                 <Text style={styles.headerTitle}>Supplier Dashboard</Text>
 
-
-                {/* Search & Requests */}
                 <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
                     <TextInput
                         value={query}
@@ -304,7 +297,6 @@ function SupplierDashboard({ token }) {
                     />
                 )}
 
-                {/* Product Modal */}
                 <Modal
                     visible={!!selectedProduct}
                     transparent
@@ -336,7 +328,6 @@ function SupplierDashboard({ token }) {
                     </View>
                 </Modal>
 
-                {/* Consumer Requests Modal */}
                 <Modal
                     visible={showRequestsModal}
                     transparent
@@ -367,10 +358,6 @@ function SupplierDashboard({ token }) {
         </SafeAreaView>
     );
 }
-
-/* ============================================================
-   =================== CONSUMER DASHBOARD ======================
-   ============================================================ */
 
 function ConsumerDashboard({ token }) {
   const router = useRouter();
@@ -421,10 +408,7 @@ function ConsumerDashboard({ token }) {
           return;
         }
 
-        // Expecting array like:
-        // [{ supplier_id, business_name, business_type, city, country, product_count_in_category, total_active_products, is_linked, link_status }]
         if (Array.isArray(data)) {
-          // map to consistent UI model
           const mapped = data.map((c) => ({
             id: c.supplier_id ?? c.id ?? null,
             name: c.business_name ?? c.name ?? "—",
@@ -435,7 +419,6 @@ function ConsumerDashboard({ token }) {
             totalActive: c.total_active_products ?? 0,
             is_linked: !!c.is_linked,
             link_status: c.link_status ?? null,
-            // keep original raw to pass along if needed
             raw: c,
           })).filter(Boolean);
           setCompanies(mapped);
@@ -458,7 +441,6 @@ function ConsumerDashboard({ token }) {
     if (!displayQuery) return;
     setRefreshing(true);
     try {
-      // reuse search effect by calling directly
       const headers = { Accept: "application/json" };
       if (token) headers.Authorization = `Bearer ${token}`;
 
@@ -512,7 +494,6 @@ function ConsumerDashboard({ token }) {
       });
       if (resp.ok) {
         Alert.alert("Request Sent", "Your connection request was sent.");
-        // optionally update the single company object as linked
         setCompanies(prev => prev.map(c => c.id === company.id ? { ...c, is_linked: true } : c));
       } else {
         const text = await resp.text().catch(() => null);
@@ -546,13 +527,11 @@ function ConsumerDashboard({ token }) {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={{ padding: 16 }}>
-        {/* Header */}
         <View style={styles.headerRow}>
           <Text style={styles.headerTitle}>Companies</Text>
 
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <TouchableOpacity onPress={() => setDisplayQuery(prev => prev)} style={{ marginRight: 18 }}>
-              {/* re-run search by re-setting (noop) or you can call fetch directly */}
               <Ionicons name="refresh-outline" size={24} color="#111" />
             </TouchableOpacity>
 
@@ -562,7 +541,6 @@ function ConsumerDashboard({ token }) {
           </View>
         </View>
 
-        {/* Search */}
         <TextInput
           value={query}
           onChangeText={setQuery}
@@ -570,7 +548,6 @@ function ConsumerDashboard({ token }) {
           style={styles.search}
         />
 
-        {/* Results */}
         {loading ? (
           <View style={{ marginTop: 24 }}>
             <ActivityIndicator size="large" />
@@ -591,7 +568,6 @@ function ConsumerDashboard({ token }) {
           />
         )}
 
-        {/* Modal */}
         <Modal visible={!!selectedCompany} transparent animationType="slide" onRequestClose={() => setSelectedCompany(null)}>
           <View style={styles.modalContainer}>
             <View style={styles.modalBox}>
@@ -622,11 +598,6 @@ function ConsumerDashboard({ token }) {
     </SafeAreaView>
   );
 }
-
-
-/* ============================================================
-   ========================== STYLES ===========================
-   ============================================================ */
 
 const styles = StyleSheet.create({
     safe: { flex: 1, backgroundColor: "#fff" },

@@ -212,11 +212,6 @@ export default function Profile() {
       </ScrollView>
 
       <View style={styles.bottomButtons}>
-        <TouchableOpacity style={styles.bottomButton}>
-          <Ionicons name="settings-outline" size={20} color="#007bff" />
-          <Text style={styles.bottomButtonText}>Settings</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity
           style={[styles.bottomButton, { backgroundColor: '#ff4d4d' }]}
           onPress={signOut}
@@ -226,7 +221,6 @@ export default function Profile() {
         </TouchableOpacity>
       </View>
 
-      {/* Linked Users Modal */}
       <Modal
         visible={showLinksModal}
         transparent
@@ -241,14 +235,12 @@ export default function Profile() {
                 <Text style={styles.emptyText}>No linked users yet.</Text>
               ) : (
                 linkedUsers.map((link) => {
-                  // Determine which name to show based on user type
                   const userType = user?.userType?.toLowerCase() || 'consumer';
                   const userName = userType === 'supplier'
                     ? (link.consumer_name || 'Unknown Consumer')
                     : (link.supplier_name || 'Unknown Supplier');
                   const userRole = userType === 'supplier' ? 'Consumer' : 'Supplier';
 
-                  // Format the date - use requested_at or responded_at
                   const linkDate = link.responded_at || link.requested_at;
                   const formattedDate = linkDate
                     ? new Date(linkDate).toLocaleDateString()
@@ -304,8 +296,6 @@ export default function Profile() {
   );
 }
 
-// keep your existing styles unchanged
-
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f5f5f5' },
     scrollContainer: { padding: 20, paddingBottom: 120 },
@@ -335,7 +325,6 @@ const styles = StyleSheet.create({
     infoText: { fontSize: 16, marginRight: 10 },
     editButton: { padding: 4 },
 
-    // NEW
     manageButton: {
         backgroundColor: '#007bff',
         paddingVertical: 14,

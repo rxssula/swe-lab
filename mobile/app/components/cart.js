@@ -27,7 +27,6 @@ export default function Cart() {
     const [deliveryNotes, setDeliveryNotes] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
-    // Fetch products from linked suppliers
     const fetchProducts = useCallback(async () => {
         if (!token) return;
         setLoading(true);
@@ -73,7 +72,6 @@ export default function Cart() {
         }, [fetchProducts])
     );
 
-    // Add product to cart
     const addToCart = (product) => {
         setCart((prev) => {
             const existing = prev.find((item) => item.id === product.id);
@@ -89,7 +87,6 @@ export default function Cart() {
         Alert.alert('Added', `${product.name} added to cart`);
     };
 
-    // Update quantity in cart
     const updateQuantity = (productId, delta) => {
         setCart((prev) =>
             prev
@@ -102,12 +99,10 @@ export default function Cart() {
         );
     };
 
-    // Remove item from cart
     const removeFromCart = (productId) => {
         setCart((prev) => prev.filter((item) => item.id !== productId));
     };
 
-    // Group cart items by supplier
     const cartBySupplier = cart.reduce((acc, item) => {
         const supplierId = item.supplier_id;
         if (!acc[supplierId]) {
@@ -123,7 +118,6 @@ export default function Cart() {
 
     const suppliers = Object.values(cartBySupplier);
 
-    // Calculate total
     const calculateTotal = () => {
         return cart.reduce((sum, item) => {
             const price = parseFloat(item.price_per_unit) || 0;
@@ -131,7 +125,6 @@ export default function Cart() {
         }, 0);
     };
 
-    // Submit order for each supplier
     const submitOrders = async () => {
         if (cart.length === 0) {
             Alert.alert('Empty Cart', 'Your cart is empty');
@@ -145,7 +138,6 @@ export default function Cart() {
 
         setSubmitting(true);
         try {
-            // Create an order for each supplier
             const orderPromises = suppliers.map(async (supplier) => {
                 const orderData = {
                     delivery_notes: deliveryNotes || '',
@@ -200,7 +192,6 @@ export default function Cart() {
         }
     };
 
-    // Render product item for browsing
     const renderProductItem = ({ item }) => {
         const inCart = cart.find((c) => c.id === item.id);
         const price = parseFloat(item.price_per_unit) || 0;
@@ -231,7 +222,6 @@ export default function Cart() {
         );
     };
 
-    // Render cart item
     const renderCartItem = ({ item }) => {
         const price = parseFloat(item.price_per_unit) || 0;
         const subtotal = price * item.quantity;
@@ -274,7 +264,6 @@ export default function Cart() {
     return (
         <SafeAreaView style={styles.safe}>
             <View style={styles.container}>
-                {/* Header with tabs */}
                 <View style={styles.header}>
                     <TouchableOpacity
                         style={[styles.tab, viewMode === 'browse' && styles.activeTab]}
@@ -297,13 +286,11 @@ export default function Cart() {
                     </TouchableOpacity>
                 </View>
 
-                {/* Content */}
                 {loading ? (
                     <View style={styles.center}>
                         <ActivityIndicator size="large" color="#2563eb" />
                     </View>
                 ) : viewMode === 'browse' ? (
-                    // Browse Products
                     <FlatList
                         data={products}
                         keyExtractor={(item) => item.id}
@@ -320,7 +307,6 @@ export default function Cart() {
                         }
                     />
                 ) : (
-                    // Cart View
                     <>
                         {cart.length === 0 ? (
                             <View style={styles.center}>
@@ -339,7 +325,6 @@ export default function Cart() {
                                     contentContainerStyle={{ paddingBottom: 140 }}
                                 />
 
-                                {/* Total Bar */}
                                 <View style={styles.totalBar}>
                                     <Text style={styles.totalText}>Total:</Text>
                                     <Text style={styles.totalValue}>
@@ -347,7 +332,6 @@ export default function Cart() {
                                     </Text>
                                 </View>
 
-                                {/* Checkout Button */}
                                 <TouchableOpacity
                                     style={styles.checkoutBtn}
                                     onPress={() => setCheckoutVisible(true)}
@@ -359,7 +343,6 @@ export default function Cart() {
                     </>
                 )}
 
-                {/* Checkout Modal */}
                 <Modal
                     visible={checkoutVisible}
                     animationType="slide"
@@ -371,7 +354,6 @@ export default function Cart() {
                             <Text style={styles.modalTitle}>Checkout</Text>
 
                             <ScrollView>
-                                {/* Delivery Options */}
                                 <Text style={styles.sectionLabel}>Delivery Option</Text>
                                 <View style={styles.row}>
                                     <TouchableOpacity
@@ -411,7 +393,6 @@ export default function Cart() {
                                     </TouchableOpacity>
                                 </View>
 
-                                {/* Delivery Notes */}
                                 <Text style={styles.sectionLabel}>Delivery Notes (Optional)</Text>
                                 <TextInput
                                     placeholder="Add any special instructions..."
@@ -422,7 +403,6 @@ export default function Cart() {
                                     numberOfLines={3}
                                 />
 
-                                {/* Order Summary */}
                                 <Text style={styles.summaryTitle}>Order Summary</Text>
                                 {suppliers.map((supplier) => {
                                     const supplierTotal = supplier.items.reduce((sum, item) => {
@@ -449,7 +429,6 @@ export default function Cart() {
                                     Grand Total: ${calculateTotal().toFixed(2)}
                                 </Text>
 
-                                {/* Submit Button */}
                                 <TouchableOpacity
                                     style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
                                     onPress={submitOrders}
@@ -462,7 +441,6 @@ export default function Cart() {
                                     )}
                                 </TouchableOpacity>
 
-                                {/* Cancel Button */}
                                 <TouchableOpacity onPress={() => setCheckoutVisible(false)}>
                                     <Text style={styles.closeText}>Cancel</Text>
                                 </TouchableOpacity>

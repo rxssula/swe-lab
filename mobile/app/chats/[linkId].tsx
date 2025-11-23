@@ -91,7 +91,6 @@ export default function ChatThreadScreen() {
   const otherPartyName = name || 'Chat'
   const currentUserId = user?.id ? String(user.id) : null
 
-  // Debug: Log user ID on component mount
   useEffect(() => {
     if (__DEV__) {
       console.log('Chat Screen - Current User ID:', currentUserId)
@@ -134,7 +133,6 @@ export default function ChatThreadScreen() {
     }, [loadMessages]),
   )
 
-  // Auto-refresh messages every 5 seconds to get new messages
   useEffect(() => {
     const interval = setInterval(() => {
       if (!loading) {
@@ -144,12 +142,10 @@ export default function ChatThreadScreen() {
     return () => clearInterval(interval)
   }, [loadMessages, loading])
 
-  // Mark messages as read when viewing them
   useEffect(() => {
     const markAsRead = async () => {
       if (!token || !linkId || !currentUserId || messages.length === 0) return
 
-      // Find unread messages from other users
       const unreadMessages = messages.filter(
         (msg) => msg.sender_id !== currentUserId && !msg.read_at
       )
@@ -157,7 +153,6 @@ export default function ChatThreadScreen() {
       if (unreadMessages.length === 0) return
 
       try {
-        // Mark each unread message as read
         await Promise.all(
           unreadMessages.map(async (msg) => {
             try {
@@ -177,7 +172,6 @@ export default function ChatThreadScreen() {
           })
         )
 
-        // Refresh messages to get updated read status
         setTimeout(() => loadMessages(), 500)
       } catch (err) {
         console.warn('Error marking messages as read:', err)
@@ -248,7 +242,6 @@ export default function ChatThreadScreen() {
         message_type: 'TEXT',
       }
 
-      // Add attachment URLs if files are selected
       if (selectedFiles.length > 0) {
         requestBody.attachment_urls = selectedFiles.map(f => f.uri)
       }
@@ -278,7 +271,6 @@ export default function ChatThreadScreen() {
       setMessageText('')
       setSelectedFiles([])
 
-      // Refresh messages to get the latest
       setTimeout(() => loadMessages(), 500)
     } catch (err) {
       console.error('Failed to send message', err)
@@ -291,7 +283,6 @@ export default function ChatThreadScreen() {
   const renderMessage = ({ item }: { item: ChatMessage }) => {
     const isOwn = item.sender_id === currentUserId
 
-    // Debug logging
     if (__DEV__) {
       console.log('Message:', {
         sender_id: item.sender_id,

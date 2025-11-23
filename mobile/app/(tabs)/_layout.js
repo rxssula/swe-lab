@@ -1,4 +1,3 @@
-// app/_layout.js
 import 'react-native-gesture-handler';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';

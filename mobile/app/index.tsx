@@ -2,12 +2,12 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform } from "react-native";
 import { Text, View, TextInput, Pressable, ActivityIndicator, Alert } from "react-native";
 import { Link } from "expo-router";
-import { useAuth } from "./context/AuthContext"; // adjust path
+import { useAuth } from "./context/AuthContext"; 
 
 export default function Index() {
   const [username, setUsername] = useState("");
   const [passcode, setPasscode] = useState("");
-  const { signIn, isLoading } = useAuth();   // <--- use AuthContext
+  const { signIn, isLoading } = useAuth();   
 
   const onLogin = async () => {
     if (!username || !passcode) {
@@ -16,7 +16,7 @@ export default function Index() {
     }
 
     try {
-      await signIn(username, passcode); // <--- call your AuthProvider login
+      await signIn(username, passcode); 
     } catch (error: any) {
       Alert.alert("Login failed", error.message ?? "Unknown error");
     }

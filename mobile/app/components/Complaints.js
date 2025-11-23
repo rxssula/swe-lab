@@ -1,4 +1,3 @@
-// app/Complaints.js
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Image, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -6,7 +5,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 
 export default function Complaints() {
     const router = useRouter();
-    const params = useLocalSearchParams(); // get route params
+    const params = useLocalSearchParams(); 
     const orderId = params.orderId;
 
     const [complaintText, setComplaintText] = useState('');
@@ -25,7 +24,6 @@ export default function Complaints() {
             Alert.alert('Error', 'Please enter your complaint.');
             return;
         }
-        // TODO: send complaintText + photo to backend
         Alert.alert('Success', 'Complaint submitted successfully!');
         router.back();
     };

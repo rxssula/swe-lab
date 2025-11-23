@@ -1,5 +1,3 @@
-// app/consumer/(tabs)/notifications.js
-
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
@@ -17,7 +15,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
-// --- Sample notifications ---
 const SAMPLE_NOTIFS = [
     {
         id: 'n1',
@@ -53,7 +50,6 @@ const SAMPLE_NOTIFS = [
         avatar: 'https://i.pravatar.cc/80?img=7',
     },
 
-    // 👉 Example of accepted request
     {
         id: 'n4',
         title: 'Request Accepted',
@@ -67,7 +63,6 @@ const SAMPLE_NOTIFS = [
     },
 ];
 
-// --- Helper
 function timeAgo(iso) {
     if (!iso) return '';
     const d = new Date(iso);
@@ -78,7 +73,6 @@ function timeAgo(iso) {
     return `${Math.floor(diff / 86400)}d`;
 }
 
-// --- Row
 function NotificationRow({ item, onPress, onLongPress, onToggleRead, onDelete }) {
     return (
         <TouchableOpacity
@@ -123,7 +117,6 @@ function NotificationRow({ item, onPress, onLongPress, onToggleRead, onDelete })
     );
 }
 
-// --- Screen ---
 export default function Notifications() {
     const [notifs, setNotifs] = useState([]);
     const [refreshing, setRefreshing] = useState(false);
@@ -195,7 +188,6 @@ export default function Notifications() {
 
     return (
         <SafeAreaView style={styles.screen}>
-            {/* Header */}
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Notifications</Text>
                 <View style={styles.headerRight}>
@@ -208,7 +200,6 @@ export default function Notifications() {
                 </View>
             </View>
 
-            {/* List */}
             <FlatList
                 data={notifs}
                 keyExtractor={(item) => item.id}
@@ -235,7 +226,6 @@ export default function Notifications() {
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
             />
 
-            {/* Modal */}
             <Modal visible={modalVisible} animationType="slide" transparent>
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalBox}>
@@ -251,7 +241,6 @@ export default function Notifications() {
                                     <Text style={styles.modalBody}>{selectedNotif.body}</Text>
                                 </ScrollView>
 
-                                {/* 👉 Chat only when accepted_request */}
                                 {selectedNotif.type === 'accepted_request' &&
                                     selectedNotif.supplierId && (
                                         <TouchableOpacity
@@ -287,7 +276,6 @@ export default function Notifications() {
     );
 }
 
-// --- STYLES ---
 const AVATAR = 48;
 const styles = StyleSheet.create({
     screen: { flex: 1, backgroundColor: '#f7f7f7' },
@@ -345,7 +333,6 @@ const styles = StyleSheet.create({
     emptyTitle: { marginTop: 12, fontSize: 16, fontWeight: '600' },
     emptySub: { marginTop: 6, color: '#aaa' },
 
-    // MODAL
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.45)',

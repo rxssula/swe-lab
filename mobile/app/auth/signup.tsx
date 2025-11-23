@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { useAuth } from "../context/AuthContext";
 
 export default function Signup() {
-    const [fullName, setFullName] = useState(""); // <-- NEW FIELD
+    const [fullName, setFullName] = useState(""); 
     const [businessName, setBusinessName] = useState("");
     const [businessType, setBusinessType] = useState("");
     const [address, setAddress] = useState("");
