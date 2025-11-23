@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.routers import users, auth, consumer, supplier, links, products, staff, categories, orders, chat
+from app.routers import users, auth, consumer, supplier, links, products, staff, categories, orders, chat, incidents
 from app.core.db import engine
 from app.core.config import settings
 from app import models
@@ -35,6 +35,7 @@ app.include_router(staff.router)
 app.include_router(categories.router)
 app.include_router(orders.router)
 app.include_router(chat.router)
+app.include_router(incidents.router)
 
 # Mount static files for uploads
 import os
